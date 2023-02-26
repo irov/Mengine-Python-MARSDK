@@ -1,0 +1,5 @@
+<Pak>
+    <Scripts>
+        <Script Path="Scripts/" Module="MARSDK" Initializer="onInitialize" Finalizer="onFinalize"/>
+    </Scripts>
+</Pak>
