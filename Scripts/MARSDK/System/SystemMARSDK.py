@@ -1,5 +1,3 @@
-import json
-
 from Event import Event
 from Foundation.DefaultManager import DefaultManager
 from Foundation.GroupManager import GroupManager
@@ -14,10 +12,13 @@ from HOPA.System.SystemMonetization import SystemMonetization
 from MARSDK.MarParamsManager import MarParamsManager
 from MARSDK.MarUtils import MarUtils
 from Notification import Notification
+import json
+
 
 _Log = SimpleLogger("SystemMARSDK")
 APPLE_SDK_NAME = "AppleMARSDK"
 ANDROID_SDK_NAME = "MarSDK"
+
 
 class SystemMARSDK(System):
     sdk_init_event = Event("onMarSDKInitEvent")
@@ -29,7 +30,7 @@ class SystemMARSDK(System):
     login_details = None
 
     clipboard = None
-    b_observers = False
+    _last_purchase_data = None
 
     def __init__(self):
         super(SystemMARSDK, self).__init__()
@@ -57,8 +58,7 @@ class SystemMARSDK(System):
                 self.runUserAgreementBlocker()
         return True
 
-    @staticmethod
-    def __tryIOSMarSDK():
+    def __tryIOSMarSDK(self):
         if SystemMARSDK.sdk_init is True:
             return True
 
@@ -66,9 +66,26 @@ class SystemMARSDK(System):
         Trace.msg(" TRY IOS SDK {} INIT ".format(APPLE_SDK_NAME).center(51, "-"))
 
         try:
-            callbacks = {"onUserLogin": SystemMARSDK._cbAppleLogin, "onUserLogout": SystemMARSDK._cbLogout, "onPayPaid": SystemMARSDK._cbApplePayResult, "onPlatformInit": SystemMARSDK._cbAppleInit, "onRealName": SystemMARSDK._cbAppleRealName, # advertisement cbs
-                "onAdRewardedDidFailed": SystemMARSDK._cbAppleAdRewardedDidFailed, "onAdRewardedDidLoaded": SystemMARSDK._cbAppleAdRewardedDidLoaded, "onAdRewardedDidShow": SystemMARSDK._cbAppleAdRewardedDidShow, "onAdRewardedDidClicked": SystemMARSDK._cbAppleAdRewardedDidClicked, "onAdRewardedDidClosed": SystemMARSDK._cbAppleAdRewardedDidClosed, "onAdRewardedDidSkipped": SystemMARSDK._cbAppleAdRewardedDidSkipped, "onAdRewardedDidFinished": SystemMARSDK._cbAppleAdRewardedDidFinished, }
+            callbacks = {
+                "onUserLogin": SystemMARSDK._cbAppleLogin,
+                "onUserLogout": SystemMARSDK._cbLogout,
+                "onPayPaid": SystemMARSDK._cbApplePayResult,
+                "onPlatformInit": SystemMARSDK._cbAppleInit,
+                "onRealName": SystemMARSDK._cbAppleRealName,
+                "onPropComplete": SystemMARSDK._cbPropComplete,
+                "onPropError": SystemMARSDK._cbPropError,
+                # advertisement cbs
+                "onAdRewardedDidFailed": SystemMARSDK._cbAppleAdRewardedDidFailed,
+                "onAdRewardedDidLoaded": SystemMARSDK._cbAppleAdRewardedDidLoaded,
+                "onAdRewardedDidShow": SystemMARSDK._cbAppleAdRewardedDidShow,
+                "onAdRewardedDidClicked": SystemMARSDK._cbAppleAdRewardedDidClicked,
+                "onAdRewardedDidClosed": SystemMARSDK._cbAppleAdRewardedDidClosed,
+                "onAdRewardedDidSkipped": SystemMARSDK._cbAppleAdRewardedDidSkipped,
+                "onAdRewardedDidFinished": SystemMARSDK._cbAppleAdRewardedDidFinished,
+            }
             Mengine.appleMARSDKSetProvider(callbacks)
+            self.addObserver(Notificator.onGameStoreSentRewards, SystemMARSDK._cbGotRewards)
+
             SystemMARSDK._addDebugger("IOS")
             SystemMARSDK.current_sdk = APPLE_SDK_NAME
         except Exception:
@@ -117,7 +134,11 @@ class SystemMARSDK(System):
         DefaultManager.addDefault("UseDefaultGDPRProvider", False)
         PolicyManager.setPolicy("Purchase", "PolicyPurchaseMarSDK")
         PolicyManager.setPolicy("Authorize", "PolicyAuthMarSDK")
-        AdvertisementProvider.setProvider("MARSDK", {"ShowRewardedAdvert": SystemMARSDK.showAd, "CanOfferRewardedAdvert": SystemMARSDK.canOfferAd, "IsRewardedAdvertAvailable": SystemMARSDK.isAdvertAvailable, })
+        AdvertisementProvider.setProvider("MARSDK", {
+            "ShowRewardedAdvert": SystemMARSDK.showAd,
+            "CanOfferRewardedAdvert": SystemMARSDK.canOfferAd,
+            "IsRewardedAdvertAvailable": SystemMARSDK.isAdvertAvailable,
+        })
 
     def _onStop(self):
         if MarUtils.isMartianIOS():
@@ -187,17 +208,25 @@ class SystemMARSDK(System):
         if Mengine.isAvailablePlugin(APPLE_SDK_NAME) is False:
             return SystemMARSDK.pay(productID, productName, productDesc, price)
 
-        payment_data = dict(productId=productID, price=price, productName=productName, productDesc=productDesc)
-        other = {"payType": 0, "orderID": "",
+        payment_data = dict(
+            productId=productID, price=price,
+            productName=productName, productDesc=productDesc,
+            buyNum=1, coinNum=balance
+        )
 
-            "buyNum": 1, "coinNum": balance,
-
-            "roleId": "", "roleName": "", "roleLevel": "", "vip": "", "serverId": "", "serverName": "", "notifyUrl": "", }
-        payment_data.update(other)
         _Log("[AppleMARSDK] SubmitPaymentData: payment_data={}".format(payment_data))
 
         json_payment_data = json.dumps(payment_data)
         Mengine.appleMARSDKSubmitPaymentData(json_payment_data)
+
+    @staticmethod
+    def _cbPropComplete(orderID):
+        _Log("[AppleMARSDK cb] order complete: {}".format(orderID))
+        SystemMARSDK._last_purchase_data = None
+
+    @staticmethod
+    def _cbPropError(orderID):
+        _Log("[AppleMARSDK cb] order error: {}".format(orderID), err=True, force=True)
 
     @staticmethod
     def _cbApplePayResult(details):
@@ -208,6 +237,7 @@ class SystemMARSDK(System):
         'hbType': 'CNY', 'productID': 'com.martian.PAP_prompt_18'},
         """
         _Log("[AppleMARSDK] onApplePayResult: {}".format(details))
+        SystemMARSDK._last_purchase_data = details
         SystemMARSDK._cbPaySuccess(details["productID"])
 
     @staticmethod
@@ -221,6 +251,19 @@ class SystemMARSDK(System):
         """ onPayFail java callback """
         Notification.notify(Notificator.onPayFailed, productID)
         _Log("pay fail %s" % productID, err=True, force=True)
+
+    @staticmethod
+    def _cbGotRewards(productID, rewards):
+        if SystemMARSDK._last_purchase_data is None:
+            return False
+
+        last_product_id = SystemMARSDK._last_purchase_data["productID"]
+
+        if productID == last_product_id:
+            last_order_id = SystemMARSDK._last_purchase_data["orderId"]
+            Mengine.appleMARSDKPropComplete(last_order_id)
+
+        return False
 
     ###################################################
     # Methods for working with Advertisements
@@ -357,24 +400,24 @@ class SystemMARSDK(System):
 
     @staticmethod
     def _cbInitSuccess(*args):
-        _Log("MarSDK init: SUCCESS: args={}".format(args))
+        _Log("MarSDK init cb: SUCCESS: args={}".format(args))
         SystemMARSDK.sdk_init = True
         SystemMARSDK.sdk_init_event(True)
 
     @staticmethod
     def _cbInitFail(*args):
-        _Log("MarSDK init: !!!!!!!! FAIL !!!!!!!!: args={}".format(args), err=True)
+        _Log("MarSDK init cb: !!!!!!!! FAIL !!!!!!!!: args={}".format(args), err=True)
         SystemMARSDK.sdk_init = False
         SystemMARSDK.sdk_init_event(False)
 
     @staticmethod
     def _cbAppleInit(*args):
-        _Log("[AppleMARSDK] platform init: args={}".format(args))
+        _Log("[AppleMARSDK cb] platform init: args={}".format(args))
         SystemMARSDK._cbInitSuccess(args)
 
     @staticmethod
     def _cbAppleRealName(*args):
-        _Log("[AppleMARSDK] onAppleRealName: {}".format(args))
+        _Log("[AppleMARSDK cb] onAppleRealName: {}".format(args))
 
     @staticmethod
     def _cbAppleLogin(login_details):
@@ -386,7 +429,7 @@ class SystemMARSDK(System):
         'nickName': '\xe4\xb8\x9c\xe5\xae\xab\xe7\xbf\xa0\xe9\xad\x82',
         'token': 'marsdk_server-f919c9f0607af1412ee7b4ee01d37b37'}
         """
-        _Log("[AppleMARSDK] onAppleLogin: {}".format(login_details))
+        _Log("[AppleMARSDK cb] onAppleLogin: {}".format(login_details))
 
         if login_details.get("isSuc", True) is False:
             SystemMARSDK._cbLoginFail()
@@ -397,25 +440,25 @@ class SystemMARSDK(System):
 
     @staticmethod
     def _cbLoginSuccess(*args):
-        _Log("MarSDK login: SUCCESS: args={}".format(args))
+        _Log("MarSDK login cb: SUCCESS: args={}".format(args))
         SystemMARSDK.login_event(True)
         SystemMARSDK.login_status = True
         SystemMARSDK.__updateDebuggerLoginDetails()
 
     @staticmethod
     def _cbLoginFail(*args):
-        _Log("MarSDK login: FAIL: args={}".format(args), err=True)
+        _Log("MarSDK login cb: FAIL: args={}".format(args), err=True)
         SystemMARSDK.login_event(False)
         SystemMARSDK.__updateDebuggerLoginDetails()
 
     @staticmethod
     def _cbSwitchAccount(*args):
-        _Log("MarSDK switch account: args={}".format(args))
+        _Log("MarSDK switch account cb: args={}".format(args))
         SystemMARSDK.__updateDebuggerLoginDetails()
 
     @staticmethod
     def _cbLogout(*args):
-        _Log("MarSDK logout: args={}".format(args))
+        _Log("MarSDK logout cb: args={}".format(args))
         SystemMARSDK.login_status = False
         SystemMARSDK.login_details = None
         SystemMARSDK.__updateDebuggerLoginDetails()
@@ -494,50 +537,6 @@ class SystemMARSDK(System):
     # Methods for working with player data
     ###################################################
 
-    @staticmethod
-    def submitExtendedData(**kwargs):  # form docs: "Game access to the server requires access"
-        """
-            The method divides the timing of the call into several types:
-                1. Select server (optional connection)
-                2. Create Character
-                3. Enter game
-                4. Level Up
-                5. Exit game
-            So in all five places above, you need to call MARUser.getInstance().submitExtraData(UserExtraData extraData)
-            NOTE: When you select a server, you can't know the character data because
-            you haven't entered the game yet, and you ONLY need to pass in the server
-            information in extraData.
-
-            todo: specify default values and their types
-        """
-        timestamp = Mengine.getTime()
-        balance = SystemMonetization.getBalance()
-        data = {"dataType": kwargs.get("dataType", int(timestamp))  # Call timing : int
-            , "opType": kwargs.get("opType", str(timestamp))  # Call timing : str
-            , "roleID": kwargs.get("roleID", "100")  # no descr, just default value
-            , "roleName": kwargs.get("roleName", "⼩兵")  # Player character Name : str
-            , "roleLevel": kwargs.get("roleLevel", "22")  # Player character Level : str
-            , "serverID": kwargs.get("serverID", "100")  # id of player server : str
-            , "serverName": kwargs.get("serverName", "初来乍到")  # name of player server : str
-            , "moneyNum": kwargs.get("moneyNum", balance)  # number of money player has : int
-            , "roleCreateTime": kwargs.get("roleCreateTime")  # timestamp role create
-            , "roleLevelUpTime": kwargs.get("roleLevelUpTime")  # timestamp role level up
-            , "vip": kwargs.get("vip", "101")  # player vip level : str
-            , "roleGender": kwargs.get("roleGender")  # gender (0:male, 1:female) : int
-
-            , "professionID": kwargs.get("professionID"), "professionName": kwargs.get("professionName"), "power": kwargs.get("power"), "partyID": kwargs.get("partyID"), "partyName": kwargs.get("partyName"), "partyMasterID": kwargs.get("partyMasterID"), "partyMasterName": kwargs.get("partyMasterName")}
-
-        if Mengine.isAvailablePlugin(APPLE_SDK_NAME) is False:
-            if MarUtils.getDebugOption() == "ios":
-                _Log("[AppleMARSDK not active] submitExtendedData aborted: {}".format(data))
-                return True
-            _Log("[AppleMARSDK] submitExtendedData aborted - plugin not active", err=True, force=True)
-            return False
-
-        json_data = json.dumps(data)
-        Mengine.appleMARSDKSubmitExtendedData(json_data)
-        return True
-
     def _onLoad(self, dict_save):
         self.isConfirmedUserAgreement = dict_save.get("user_agreement_confirm", False)
         self._onLoadSave()
@@ -561,7 +560,14 @@ class SystemMARSDK(System):
         Mengine.changeCurrentAccountSetting("DifficultyCustomHintTime", unicode(hint_time))
         Mengine.changeCurrentAccountSetting("DifficultyCustomSkipTime", unicode(skip_time))
 
-        difficulties = {"SPARKLES_ON_ACTIVE_AREAS": "DifficultyCustomSparklesOnActiveAreas", "TUTORIAL_AVAILABLE": "DifficultyCustomTutorial", "PLUS_ITEM_INDICATED": "DifficultyCustomPlusItemIndicated", "CHANGE_ICON_ON_ACTIVE_AREAS": "DifficultyCustomChangeIconOnActiveAreas", "INDICATORS_ON_MAP": "DifficultyCustomIndicatorsOnMap", "SPARKLES_ON_HO": "DifficultyCustomSparklesOnHOPuzzles", }
+        difficulties = {
+            "SPARKLES_ON_ACTIVE_AREAS": "DifficultyCustomSparklesOnActiveAreas",
+            "TUTORIAL_AVAILABLE": "DifficultyCustomTutorial",
+            "PLUS_ITEM_INDICATED": "DifficultyCustomPlusItemIndicated",
+            "CHANGE_ICON_ON_ACTIVE_AREAS": "DifficultyCustomChangeIconOnActiveAreas",
+            "INDICATORS_ON_MAP": "DifficultyCustomIndicatorsOnMap",
+            "SPARKLES_ON_HO": "DifficultyCustomSparklesOnHOPuzzles",
+        }
 
         for key, param in difficulties.items():
             value = MarParamsManager.getData(key)
@@ -653,23 +659,6 @@ class SystemMARSDK(System):
     @staticmethod
     def __getIOSWidgets():
         widgets = []
-
-        # command lines
-
-        def _cb(raw_json):
-            try:
-                params = json.loads(raw_json)
-                _Log("Got next params for submitExtendedData: {}".format(params))
-                SystemMARSDK.submitExtendedData(**params)
-            except ValueError as e:
-                Trace.log("System", 0, "AppleExtendedDataWidget cb failed: {}".format(e))
-
-        w_extended_data = Mengine.createDevToDebugWidgetCommandLine("submit_extended_data")
-        w_extended_data.setTitle("Submit Extended Data")
-        w_extended_data.setPlaceholder("Input json")
-        w_extended_data.setCommandEvent(_cb)
-        widgets.append(w_extended_data)
-
         return widgets
 
     @staticmethod
