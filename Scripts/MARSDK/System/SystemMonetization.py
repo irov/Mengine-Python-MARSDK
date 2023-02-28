@@ -3,13 +3,14 @@ from HOPA.System.SystemMonetization import SystemMonetization as SystemMonetizat
 from HOPA.System.SystemMonetization import _Log
 from MARSDK.MarUtils import MarUtils
 
+
 class SystemMonetization(SystemMonetizationBase):
 
     if MarUtils.isMartianTouchpadDevice():
 
         def _setupParams(self):
             super(SystemMonetization, self)._setupParams()
-            MonetizationManager.addCurrencyCode("MAR", "ID_CURRENCY_MARTIAN")
+            MonetizationManager.addCurrencyCode("MAR", "ID_CURRENCY_YUAN_CHAR")
             MonetizationManager.setCurrentCurrencyCode("MAR")
 
     if MarUtils.isMartianAndroid() is True:
