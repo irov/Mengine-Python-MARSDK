@@ -62,10 +62,10 @@ class SystemMARSDK(System):
         if SystemMARSDK.sdk_init is True:
             return True
 
-        # ( _cbUserLogin, _cbUserLogout, _cbPayPaid, _args )
         Trace.msg(" TRY IOS SDK {} INIT ".format(APPLE_SDK_NAME).center(51, "-"))
 
         try:
+            self.addObserver(Notificator.onGameStoreSentRewards, SystemMARSDK._cbGotRewards)
             callbacks = {
                 "onUserLogin": SystemMARSDK._cbAppleLogin,
                 "onUserLogout": SystemMARSDK._cbLogout,
@@ -84,7 +84,6 @@ class SystemMARSDK(System):
                 "onAdRewardedDidFinished": SystemMARSDK._cbAppleAdRewardedDidFinished,
             }
             Mengine.appleMARSDKSetProvider(callbacks)
-            self.addObserver(Notificator.onGameStoreSentRewards, SystemMARSDK._cbGotRewards)
 
             SystemMARSDK._addDebugger("IOS")
             SystemMARSDK.current_sdk = APPLE_SDK_NAME
