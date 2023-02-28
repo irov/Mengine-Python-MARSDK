@@ -22,7 +22,11 @@ class SystemMonetization(SystemMonetizationBase):
             if reward_type is None:
                 return False
 
-            rewards = {"golds": [SystemMonetization.addGold, reward_amount], "energy": [SystemMonetization.addEnergy, reward_amount], "MysteryChapter": [SystemMonetization.unlockChapter, "Bonus"]}
+            rewards = {
+                "golds": [SystemMonetization.addGold, reward_amount],
+                "energy": [SystemMonetization.addEnergy, reward_amount],
+                "MysteryChapter": [SystemMonetization.unlockChapter, "Bonus"]
+            }
 
             if reward_type not in rewards:
                 Trace.log("System", 0, "SystemMonetization (MarSDK) reward_type {!r} is unknown".format(reward_type))
