@@ -659,6 +659,15 @@ class SystemMARSDK(System):
     @staticmethod
     def __getIOSWidgets():
         widgets = []
+
+        # command lines
+
+        w_prop_complete = Mengine.createDevToDebugWidgetCommandLine("prop_complete")
+        w_prop_complete.setTitle("Complete order")
+        w_prop_complete.setPlaceholder("<order_id>")
+        w_prop_complete.setCommandEvent(lambda order_id: Mengine.appleMARSDKPropComplete(str(order_id)))
+        widgets.append(w_prop_complete)
+
         return widgets
 
     @staticmethod
