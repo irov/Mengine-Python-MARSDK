@@ -62,7 +62,7 @@ class SystemMARSDK(System):
         if SystemMARSDK.sdk_init is True:
             return True
 
-        Trace.msg(" TRY IOS SDK {} INIT ".format(APPLE_SDK_NAME).center(51, "-"))
+        Trace.msg(" TRY IOS SDK {} ".format(APPLE_SDK_NAME).center(51, "-"))
 
         try:
             self.addObserver(Notificator.onGameStoreSentRewards, SystemMARSDK._cbGotRewards)
@@ -90,14 +90,18 @@ class SystemMARSDK(System):
         except Exception:
             traceback.print_exc()
 
-        Trace.msg(" IOS MarSDK init status: {} ".format(SystemMARSDK.hasActiveSDK()).center(51, "-"))
+        if SystemMARSDK.isSDKInited() is True:
+            Trace.msg("MarSDK init successful: TRUE")
+        else:
+            Trace.msg("MarSDK not inited, wait for init success...")
+        Trace.msg(" IOS MarSDK prepare status: {} ".format(SystemMARSDK.hasActiveSDK()).center(51, "-"))
 
     @staticmethod
     def __tryAndroidMarSDK():
         if SystemMARSDK.sdk_init is True:
             return True
 
-        Trace.msg(" TRY ANDROID SDK {} INIT ".format(ANDROID_SDK_NAME).center(51, "-"))
+        Trace.msg(" TRY ANDROID SDK {} ".format(ANDROID_SDK_NAME).center(51, "-"))
 
         try:
             Mengine.waitAndroidSemaphore("onMarSDKInitSuccess", SystemMARSDK._cbInitSuccess)
@@ -118,7 +122,11 @@ class SystemMARSDK(System):
         except Exception:
             traceback.print_exc()
 
-        Trace.msg(" MarSDK init status: {} ".format(SystemMARSDK.hasActiveSDK()).center(51, "-"))
+        if SystemMARSDK.isSDKInited() is True:
+            Trace.msg("MarSDK init successful: TRUE")
+        else:
+            Trace.msg("MarSDK not inited, wait for init success...")
+        Trace.msg(" MarSDK prepare status: {} ".format(SystemMARSDK.hasActiveSDK()).center(51, "-"))
 
     @staticmethod
     def hasActiveSDK():
@@ -398,14 +406,14 @@ class SystemMARSDK(System):
     ###################################################
 
     @staticmethod
-    def _cbInitSuccess(*args):
-        _Log("MarSDK init cb: SUCCESS: args={}".format(args))
+    def _cbInitSuccess(*_, **__):
+        _Log("MarSDK init cb: SUCCESS")
         SystemMARSDK.sdk_init = True
         SystemMARSDK.sdk_init_event(True)
 
     @staticmethod
-    def _cbInitFail(*args):
-        _Log("MarSDK init cb: !!!!!!!! FAIL !!!!!!!!: args={}".format(args), err=True)
+    def _cbInitFail(*_, **__):
+        _Log("MarSDK init cb: !!!!!!!! FAIL !!!!!!!!", err=True, force=True)
         SystemMARSDK.sdk_init = False
         SystemMARSDK.sdk_init_event(False)
 
