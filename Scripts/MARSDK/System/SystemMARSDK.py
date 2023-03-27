@@ -59,7 +59,7 @@ class SystemMARSDK(System):
         return True
 
     def __tryIOSMarSDK(self):
-        if SystemMARSDK.sdk_init is True:
+        if SystemMARSDK.isSDKInited() is True:
             return True
 
         Trace.msg(" TRY IOS SDK {} ".format(APPLE_SDK_NAME).center(51, "-"))
@@ -96,24 +96,28 @@ class SystemMARSDK(System):
             Trace.msg("MarSDK not inited, wait for init success...")
         Trace.msg(" IOS MarSDK prepare status: {} ".format(SystemMARSDK.hasActiveSDK()).center(51, "-"))
 
-    @staticmethod
-    def __tryAndroidMarSDK():
-        if SystemMARSDK.sdk_init is True:
+    def __tryAndroidMarSDK(self):
+        if SystemMARSDK.isSDKInited() is True:
             return True
 
         Trace.msg(" TRY ANDROID SDK {} ".format(ANDROID_SDK_NAME).center(51, "-"))
 
         try:
+            self.addObserver(Notificator.onGameStoreSentRewards, SystemMARSDK._cbGotRewards)
+
             Mengine.waitAndroidSemaphore("onMarSDKInitSuccess", SystemMARSDK._cbInitSuccess)
             Mengine.waitAndroidSemaphore("onMarSDKInitFail", SystemMARSDK._cbInitFail)
 
-            Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKLoginSuccess", SystemMARSDK._cbLoginSuccess)
-            Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKLoginFail", SystemMARSDK._cbLoginFail)
+            Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKLoginSuccess", SystemMARSDK._cbAndroidLoginSuccess)
+            Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKLoginFail", SystemMARSDK._cbAndroidLoginFail)
+            Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKLoginTimeout", SystemMARSDK._cbLoginTimeout)
             Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKSwitchAccount", SystemMARSDK._cbSwitchAccount)
             Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKLogout", SystemMARSDK._cbLogout)
             Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKPaySuccess", SystemMARSDK._cbPaySuccess)
             Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKPayFail", SystemMARSDK._cbPayFail)
-            Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKRedeemResult", SystemMARSDK._cbRedeemResult)
+            Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKPayError", SystemMARSDK._cbPayError)
+            Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKRedeemResult", SystemMARSDK._cbRedeemResultSuccess)
+            Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKRedeemError", SystemMARSDK._cbRedeemResultError)
             Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKSaveClipboard", SystemMARSDK._cbGetFromClipboard)
             Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKAdVideoCallback", SystemMARSDK._cbVideoAdCallback)
 
@@ -131,6 +135,10 @@ class SystemMARSDK(System):
     @staticmethod
     def hasActiveSDK():
         return SystemMARSDK.current_sdk is not None
+
+    @staticmethod
+    def getActiveSDKName():
+        return SystemMARSDK.current_sdk
 
     @staticmethod
     def isSDKInited():
@@ -166,29 +174,31 @@ class SystemMARSDK(System):
 
     @staticmethod
     def getFromClipboard():
-        Mengine.androidMethod(ANDROID_SDK_NAME, "pasteCode")
+        status = Mengine.androidBooleanMethod(ANDROID_SDK_NAME, "pasteCode")
+        _Log("try to get from clipboard status = {}".format(status))
 
     @staticmethod
-    def _cbGetFromClipboard(text):
-        _Log("onGetFromClipboard: {!r}".format(text))
+    def _cbGetFromClipboard(hasPrimaryClip, text):
+        _Log("onGetFromClipboard (hasPrimaryClip={}): {!r}".format(hasPrimaryClip, text))
         SystemMARSDK.clipboard = text
 
     @staticmethod
-    def _cbRedeemResult(result, propNumber, propType, msg):
-        _Log("onRedeemResult: result={}, propNumber={}, propType={}, msg={}".format(result, propNumber, propType, msg))
-        if result == 0:
-            if propType in ["golds", "energy"] and propNumber > 0:  # add gold
-                Notification.notify(Notificator.onGiftExchangeRedeemResult, propType, propNumber)
-                _Log("onRedeemResult - SUCCESS: {}, {}, {}".format(propNumber, propType, msg))
-            elif propType == "unlock":
-                Notification.notify(Notificator.onGiftExchangeRedeemResult, "MysteryChapter", None)
-                _Log("onRedeemResult - SUCCESS: {}, {}".format(propType, msg))
-            else:
-                Notification.notify(Notificator.onGiftExchangeRedeemResult, None, None)
-                _Log("onRedeemResult - FAIL: {}, {}, {}".format(propNumber, propType, msg), err=True)
+    def _cbRedeemResultSuccess(propNumber, propType, msg):
+        _Log("onRedeemResult: propNumber={}, propType={}, msg={}".format(propNumber, propType, msg))
+        if propType in ["golds", "energy"] and propNumber > 0:  # add gold
+            Notification.notify(Notificator.onGiftExchangeRedeemResult, propType, propNumber)
+            _Log("onRedeemResult - SUCCESS: {}, {}, {}".format(propNumber, propType, msg))
+        elif propType == "unlock":
+            Notification.notify(Notificator.onGiftExchangeRedeemResult, "MysteryChapter", None)
+            _Log("onRedeemResult - SUCCESS: {}, {}".format(propType, msg))
         else:
             Notification.notify(Notificator.onGiftExchangeRedeemResult, None, None)
-            _Log("onRedeemResult - FAIL with result {}".format(result), err=True, force=True)
+            _Log("onRedeemResult - FAIL: {}, {}, {}".format(propNumber, propType, msg), err=True)
+
+    @staticmethod
+    def _cbRedeemResultError(msg, exception_text):
+        Notification.notify(Notificator.onGiftExchangeRedeemResult, None, None)
+        _Log("onRedeemResult - ERROR ({}): {}".format(msg, exception_text), err=True, force=True)
 
     ###################################################
     # Methods for working with Payment
@@ -200,40 +210,32 @@ class SystemMARSDK(System):
             return
 
         balance = SystemMonetization.getBalance()
-        if SystemMARSDK.sdk_init is False:
+        if SystemMARSDK.isSDKInited() is False:
             _Log("[MarSDK not inited] pay: %s %s %s %s %s" % (balance, productID, productName, productDesc, price))
-            SystemMARSDK._cbPaySuccess(productID)
+            SystemMARSDK._cbPaySuccess(productID, "dev_order_{}".format(Mengine.getTime()))
         else:
             _Log("[MarSDK] pay: %s %s %s %s %s" % (balance, productID, productName, productDesc, price))
-            if Mengine.isAvailablePlugin(ANDROID_SDK_NAME):
-                Mengine.androidMethod(ANDROID_SDK_NAME, "pay", balance, productID, productName, productDesc, price)
-            elif Mengine.isAvailablePlugin(APPLE_SDK_NAME):
-                SystemMARSDK.__submitPaymentData(balance, productID, productName, productDesc, price)
 
-    @staticmethod
-    def __submitPaymentData(balance, productID, productName, productDesc, price):
-        if Mengine.isAvailablePlugin(APPLE_SDK_NAME) is False:
-            return SystemMARSDK.pay(productID, productName, productDesc, price)
+            payment_data = dict(
+                productId=productID, price=price,
+                productName=productName, productDesc=productDesc,
+                buyNum=1, coinNum=balance
+            )
+            json_payment_data = json.dumps(payment_data)
 
-        payment_data = dict(
-            productId=productID, price=price,
-            productName=productName, productDesc=productDesc,
-            buyNum=1, coinNum=balance
-        )
-
-        _Log("[AppleMARSDK] SubmitPaymentData: payment_data={}".format(payment_data))
-
-        json_payment_data = json.dumps(payment_data)
-        Mengine.appleMARSDKSubmitPaymentData(json_payment_data)
+            if SystemMARSDK.getActiveSDKName() == ANDROID_SDK_NAME:
+                Mengine.androidBooleanMethod(ANDROID_SDK_NAME, "pay", json_payment_data)
+            elif SystemMARSDK.getActiveSDKName() == APPLE_SDK_NAME:
+                Mengine.appleMARSDKSubmitPaymentData(json_payment_data)
 
     @staticmethod
     def _cbPropComplete(orderID):
-        _Log("[AppleMARSDK cb] order complete: {}".format(orderID))
+        _Log("[Prop cb] order {} complete done".format(orderID))
         SystemMARSDK._last_purchase_data = None
 
     @staticmethod
     def _cbPropError(orderID):
-        _Log("[AppleMARSDK cb] order error: {}".format(orderID), err=True, force=True)
+        _Log("[Prop cb] order {} complete fail".format(orderID), err=True, force=True)
 
     @staticmethod
     def _cbApplePayResult(details):
@@ -244,31 +246,43 @@ class SystemMARSDK(System):
         'hbType': 'CNY', 'productID': 'com.martian.PAP_prompt_18'},
         """
         _Log("[AppleMARSDK] onApplePayResult: {}".format(details))
-        SystemMARSDK._last_purchase_data = details
-        SystemMARSDK._cbPaySuccess(details["productID"])
+        SystemMARSDK._cbPaySuccess(details["productID"], details["orderId"])
 
     @staticmethod
-    def _cbPaySuccess(productID):
-        """ onPaySuccess java callback """
+    def _cbPaySuccess(productID, orderID):
+        """ when payment finished successful """
+        SystemMARSDK._last_purchase_data = dict(productID=productID, orderID=orderID)
         Notification.notify(Notificator.onPaySuccess, productID)
-        _Log("pay success %s" % productID)
+        _Log("pay success %s (order = %s)" % (productID, orderID))
 
     @staticmethod
     def _cbPayFail(productID):
-        """ onPayFail java callback """
+        """ when payment failed """
         Notification.notify(Notificator.onPayFailed, productID)
         _Log("pay fail %s" % productID, err=True, force=True)
 
     @staticmethod
+    def _cbPayError(code, msg, exception_text):
+        """ something happen when we call `pay` """
+        _Log("pay error [{}] {}: {}".format(code, msg, exception_text), err=True, force=True)
+
+    @staticmethod
     def _cbGotRewards(productID, rewards):
+        """ Player got rewards after purchase something """
         if SystemMARSDK._last_purchase_data is None:
+            return False
+        if SystemMARSDK.isSDKInited() is False:
             return False
 
         last_product_id = SystemMARSDK._last_purchase_data["productID"]
 
         if productID == last_product_id:
-            last_order_id = SystemMARSDK._last_purchase_data["orderId"]
-            Mengine.appleMARSDKPropComplete(last_order_id)
+            last_order_id = SystemMARSDK._last_purchase_data["orderID"]
+
+            if SystemMARSDK.getActiveSDKName() == APPLE_SDK_NAME:
+                Mengine.appleMARSDKPropComplete(last_order_id)
+            elif SystemMARSDK.getActiveSDKName() == ANDROID_SDK_NAME:
+                Mengine.androidMethod(ANDROID_SDK_NAME, "setPropDeliveredComplete", last_order_id)
 
         return False
 
@@ -289,20 +303,20 @@ class SystemMARSDK(System):
         if not MarUtils.isMartianTouchpadDevice():
             return False
 
-        if SystemMARSDK.sdk_init is False:
+        if SystemMARSDK.isSDKInited() is False:
             _Log("[MarSDK not inited] show ad, simulate that you watched it")
             SystemMARSDK._cbVideoAdCallback("1")
         else:
             _Log("show ad", force=True)
             if Mengine.isAvailablePlugin(ANDROID_SDK_NAME):
-                Mengine.androidMethod(ANDROID_SDK_NAME, "showAd")
+                Mengine.androidBooleanMethod(ANDROID_SDK_NAME, "showAd")
             elif Mengine.isAvailablePlugin(APPLE_SDK_NAME):
                 Mengine.appleMARSDKShowRewardVideoAd("", 0)
         return True
 
     @staticmethod
     def _cbVideoAdCallback(msg, watch_ad_time=None):
-        """ onResult java callback if result code is CODE_AD_VIDEO_CALLBACK """
+        """ callback after view advert, code is CODE_AD_VIDEO_CALLBACK """
         _Log("[showAd cb] result={} ({})".format(msg, watch_ad_time), force=True)
         if msg == "1":
             Notification.notify(Notificator.onAdvertDisplayed, "Rewarded")
@@ -373,6 +387,7 @@ class SystemMARSDK(System):
         if self.existTaskChain("MartianUserAgreementBlocker") is True:
             return
 
+        # todo: remove import (may cause ImportError for some projects)
         from GOAP4.System.SystemGlobal1 import MENU_LOAD_DONE_EVENT
 
         def _confirm():
@@ -446,17 +461,43 @@ class SystemMARSDK(System):
         SystemMARSDK._cbLoginSuccess()
 
     @staticmethod
+    def _cbAndroidLoginSuccess(gameType, isFreeFlag):
+        extra_data_status = SystemMARSDK.submitLoginExtraData()
+        _Log("extra login data status = {}".format(extra_data_status))
+
+        if gameType in [1, 3] and isFreeFlag is False:
+            # acquire ads control information
+            Mengine.androidMethod(ANDROID_SDK_NAME, "reqAdControlInfo")
+
+        SystemMARSDK._cbLoginSuccess(gameType, isFreeFlag)
+
+    @staticmethod
+    def _cbAndroidLoginFail(gameType):
+        if gameType == 1:
+            Mengine.androidMethod(ANDROID_SDK_NAME, "visitorLogin")
+
+        SystemMARSDK._cbLoginFail(gameType)
+
+    @staticmethod
     def _cbLoginSuccess(*args):
+        """ when user logged in """
         _Log("MarSDK login cb: SUCCESS: args={}".format(args))
+
         SystemMARSDK.login_event(True)
         SystemMARSDK.login_status = True
         SystemMARSDK.__updateDebuggerLoginDetails()
 
     @staticmethod
     def _cbLoginFail(*args):
+        """ when user fail on login """
         _Log("MarSDK login cb: FAIL: args={}".format(args), err=True)
+
         SystemMARSDK.login_event(False)
         SystemMARSDK.__updateDebuggerLoginDetails()
+
+    @staticmethod
+    def _cbLoginTimeout():
+        _Log("MarSDK login timeout")
 
     @staticmethod
     def _cbSwitchAccount(*args):
@@ -477,6 +518,29 @@ class SystemMARSDK(System):
     ###################################################
     # Auth methods
     ###################################################
+
+    @staticmethod
+    def submitLoginExtraData():
+        """ should be called after login success """
+        if SystemMARSDK.isSDKInited() is False:
+            return False
+
+        if SystemMARSDK.getActiveSDKName() == APPLE_SDK_NAME:
+            pass    # todo if exists or remove ios part
+        elif SystemMARSDK.getActiveSDKName() == ANDROID_SDK_NAME:
+            extra_data = dict(
+                dataType=3,  # TYPE_ENTER_GAME
+                roleID="100", roleName="player", roleLevel="10",
+                serverID=10, serverName="server_10"
+            )
+            _Log("submit extra user data after login: {}".format(extra_data))
+
+            json_extra_data = json.dumps(extra_data)
+            status = Mengine.androidBooleanMethod(ANDROID_SDK_NAME, "submitExtraData", json_extra_data)
+
+            return status
+
+        return False
 
     @staticmethod
     def login():
