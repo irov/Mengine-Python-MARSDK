@@ -5,16 +5,13 @@ from MARSDK.MarUtils import MarUtils
 
 
 class SystemMonetization(SystemMonetizationBase):
-
     if MarUtils.isMartianTouchpadDevice():
-
         def _setupParams(self):
             super(SystemMonetization, self)._setupParams()
             MonetizationManager.addCurrencyCode("MAR", "ID_CURRENCY_YUAN_CHAR")
             MonetizationManager.setCurrentCurrencyCode("MAR")
 
     if MarUtils.isMartianAndroid() is True:
-
         @staticmethod
         def _onGiftExchangeRedeemResult(reward_type, reward_amount):
             _Log("onGiftExchangeRedeemResult - {} {}".format(reward_type, reward_amount))

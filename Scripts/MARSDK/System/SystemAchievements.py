@@ -6,6 +6,7 @@ from HOPA.System.SystemAchievements import SystemAchievements as SystemAchieveme
 from MARSDK.MarUtils import MarUtils
 from Notification import Notification
 
+
 class SystemAchievements(SystemAchievementsBase):
 
     # observers

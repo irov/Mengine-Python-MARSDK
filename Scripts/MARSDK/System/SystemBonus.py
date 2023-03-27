@@ -7,6 +7,7 @@ from HOPA.System.SystemBonus import SystemBonus as SystemBonusBase
 from MARSDK.MarParamsManager import MarParamsManager
 from MARSDK.MarUtils import MarUtils
 
+
 class SystemBonus(SystemBonusBase):
 
     def _onParams(self, params):

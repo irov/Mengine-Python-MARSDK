@@ -2,6 +2,7 @@ from Foundation.Task.TaskAlias import TaskAlias
 from MARSDK.MarUtils import MarUtils
 from MARSDK.System.SystemMARSDK import SystemMARSDK
 
+
 class PolicyAuthMarSDK(TaskAlias):
 
     def scopeCallLogin(self, source):

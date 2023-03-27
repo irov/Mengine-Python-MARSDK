@@ -3,6 +3,7 @@ from Foundation.Utils import getCurrentBusinessModel
 from HOPA.Entities.Toolbar.Toolbar import Toolbar as ToolbarBase
 from MARSDK.MarUtils import MarUtils
 
+
 class Toolbar(ToolbarBase):
     def _onPreparation(self):
         if GroupManager.hasObject("Toolbar", "Movie2_Slot") is False:

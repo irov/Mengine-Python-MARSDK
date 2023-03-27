@@ -1,5 +1,6 @@
 from Foundation.Utils import getCurrentPlatform, getCurrentPublisher
 
+
 class MarUtils(object):
 
     ###################################################

@@ -2,6 +2,7 @@ from Foundation.Task.TaskAlias import TaskAlias
 from MARSDK.MarUtils import MarUtils
 from MARSDK.System.SystemMARSDK import SystemMARSDK
 
+
 class PolicyPurchaseMarSDK(TaskAlias):
 
     def _onParams(self, params):

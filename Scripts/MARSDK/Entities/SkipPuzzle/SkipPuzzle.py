@@ -2,6 +2,7 @@ from HOPA.Entities.SkipPuzzle.SkipPuzzle import SkipPuzzle as SkipPuzzleBase
 from MARSDK.MarParamsManager import MarParamsManager
 from MARSDK.MarUtils import MarUtils
 
+
 class SkipPuzzle(SkipPuzzleBase):
 
     def __getLoadSkipTime(self):

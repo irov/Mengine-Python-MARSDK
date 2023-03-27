@@ -25,7 +25,13 @@ def onInitialize():
 
     from Foundation.EntityManager import EntityManager
 
-    Types = [{"name": "Options", "override": True}, {"name": "SkipPuzzle", "override": True}, {"name": "Credits", "override": True}, {"name": "GiftExchange", "override": True}, {"name": "Toolbar", "override": True}]
+    Types = [
+        {"name": "Options", "override": True},
+        {"name": "SkipPuzzle", "override": True},
+        {"name": "Credits", "override": True},
+        {"name": "GiftExchange", "override": True},
+        {"name": "Toolbar", "override": True}
+    ]
 
     EntityManager.importEntities("MARSDK.Entities", Types)
     ObjectManager.importObjects("MARSDK.Object", Types)
@@ -35,6 +41,7 @@ def onInitialize():
     SessionManager.setSessionType(GameSession)
 
     return True
+
 
 def onFinalize():
     pass

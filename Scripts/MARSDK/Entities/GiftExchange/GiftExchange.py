@@ -2,10 +2,9 @@
 from HOPA.Entities.GiftExchange.GiftExchange import _Log
 from MARSDK.System.SystemMARSDK import SystemMARSDK
 
+
 class GiftExchange(GiftExchangeBase):
-
     if SystemMARSDK.sdk_init is True:
-
         def _getFromClipboard(self):
             SystemMARSDK.getFromClipboard()
             clipboard = SystemMARSDK.clipboard

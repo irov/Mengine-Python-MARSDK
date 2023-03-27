@@ -2,6 +2,7 @@ from HOPA.Entities.Credits.Credits import Credits as CreditsBase
 from MARSDK.MarParamsManager import MarParamsManager
 from MARSDK.MarUtils import MarUtils
 
+
 class Credits(CreditsBase):
 
     def __init__(self):

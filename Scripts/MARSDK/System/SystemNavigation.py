@@ -1,6 +1,7 @@
 from Foundation.GroupManager import GroupManager
 from HOPA.System.SystemNavigation import SystemNavigation as SystemNavigationBase
 
+
 class SystemNavigation(SystemNavigationBase):
 
     def _onRun(self):

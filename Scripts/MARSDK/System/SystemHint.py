@@ -2,6 +2,7 @@ from HOPA.System.SystemHint import SystemHint as SystemHintBase
 from MARSDK.MarParamsManager import MarParamsManager
 from MARSDK.MarUtils import MarUtils
 
+
 class SystemHint(SystemHintBase):
 
     def getTotalReloadingTime(self):
