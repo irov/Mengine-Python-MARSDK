@@ -3,12 +3,14 @@ from Foundation.DefaultManager import DefaultManager
 from Foundation.GroupManager import GroupManager
 from Foundation.PolicyManager import PolicyManager
 from Foundation.Providers.AdvertisementProvider import AdvertisementProvider
+from Foundation.Providers.PaymentProvider import PaymentProvider
 from Foundation.SceneManager import SceneManager
 from Foundation.System import System
 from Foundation.Systems.SystemAppleServices import SystemAppleServices
 from Foundation.Utils import SimpleLogger
 from Foundation.Utils import getCurrentBusinessModel
 from HOPA.System.SystemMonetization import SystemMonetization
+from Foundation.MonetizationManager import MonetizationManager
 from MARSDK.MarParamsManager import MarParamsManager
 from MARSDK.MarUtils import MarUtils
 from Notification import Notification
@@ -147,7 +149,7 @@ class SystemMARSDK(System):
     @classmethod
     def _setupPolicies(cls):
         DefaultManager.addDefault("UseDefaultGDPRProvider", False)
-        PolicyManager.setPolicy("Purchase", "PolicyPurchaseMarSDK")
+        PaymentProvider.setProvider("MARSDK", dict(pay=SystemMARSDK.pay))
         PolicyManager.setPolicy("Authorize", "PolicyAuthMarSDK")
         AdvertisementProvider.setProvider("MARSDK", {
             "ShowRewardedAdvert": SystemMARSDK.showAd,
@@ -205,9 +207,19 @@ class SystemMARSDK(System):
     ###################################################
 
     @staticmethod
-    def pay(productID, productName, productDesc, price):
-        if not MarUtils.isMartianTouchpadDevice():
+    def pay(productID):
+        if MarUtils.isMartianTouchpadDevice() is False:
             return
+
+        prod_params = MonetizationManager.getProductInfo(productID)
+
+        if prod_params is None:
+            _Log("[MarSDK] pay error: product {} not found".format(productID), err=True, force=True)
+            return
+
+        productDesc = prod_params.descr
+        productName = prod_params.name
+        price = prod_params.price
 
         balance = SystemMonetization.getBalance()
         if SystemMARSDK.isSDKInited() is False:
@@ -223,10 +235,22 @@ class SystemMARSDK(System):
             )
             json_payment_data = json.dumps(payment_data)
 
-            if SystemMARSDK.getActiveSDKName() == ANDROID_SDK_NAME:
-                Mengine.androidBooleanMethod(ANDROID_SDK_NAME, "pay", json_payment_data)
-            elif SystemMARSDK.getActiveSDKName() == APPLE_SDK_NAME:
-                Mengine.appleMARSDKSubmitPaymentData(json_payment_data)
+            try:
+                SystemMARSDK._pay_json(json_payment_data)
+            except ValueError as e:
+                Trace.log("System", 0, "MarSDK pay error: {}".format(e))
+
+    @staticmethod
+    def _pay_json(json_payment_data):
+        _Log("[MarSDK] json payment data: {}".format(json_payment_data))
+
+        if SystemMARSDK.getActiveSDKName() == ANDROID_SDK_NAME:
+            Mengine.androidBooleanMethod(ANDROID_SDK_NAME, "pay", json_payment_data)
+        elif SystemMARSDK.getActiveSDKName() == APPLE_SDK_NAME:
+            Mengine.appleMARSDKSubmitPaymentData(json_payment_data)
+        else:
+            Trace.log("System", 0, "[MarSDK] pay error: no active sdk (prepared={}, inited={})".format(
+                SystemMARSDK.hasActiveSDK(), SystemMARSDK.isSDKInited()))
 
     @staticmethod
     def _cbPropComplete(orderID):
@@ -712,8 +736,8 @@ class SystemMARSDK(System):
         w_ad.setClickEvent(SystemMARSDK.showAd)
         widgets.append(w_ad)
 
-        w_pay = SystemMARSDK._createDebuggerPayWidget()
-        widgets.append(w_pay)
+        w_payments = SystemMARSDK._createDebuggerPayWidgets()
+        widgets.extend(w_payments)
 
         # specific widgets
 
@@ -773,21 +797,21 @@ class SystemMARSDK(System):
     # utils
 
     @staticmethod
-    def _createDebuggerPayWidget():
-        def _pay(text):
-            """ input text allow 4 words separated by space:
-                    productID, productName, productDesc, price
-            """
-            params = text.split(" ")
-            if len(params) != 4:
-                _Log("Wrong params len: add productID, productName, productDesc, price separated by space", err=True)
-                return
-            args = [int(arg) if arg.isdigit() else arg for arg in params]
-            SystemMARSDK.pay(*args)
+    def _createDebuggerPayWidgets():
+        w_id = Mengine.createDevToDebugWidgetCommandLine("payment_with_id")
+        w_id.setTitle("Payment (with product_id)")
+        w_id.setPlaceholder("Syntax: <product_id>")
+        w_id.setCommandEvent(SystemMARSDK.pay)
 
-        widget = Mengine.createDevToDebugWidgetCommandLine("payment")
-        widget.setTitle("Payment")
-        widget.setPlaceholder("Syntax: <id> <name> <descr> <price>")
-        widget.setCommandEvent(_pay)
+        def _pay_with_json(json_str):
+            try:
+                SystemMARSDK._pay_json(json_str)
+            except Exception as e:
+                _Log("[DevToDebug] ERROR in pay: {}".format(e), err=True)
 
-        return widget
+        w_json = Mengine.createDevToDebugWidgetCommandLine("payment_with_json")
+        w_json.setTitle("Payment (with json)")
+        w_json.setPlaceholder("Syntax: <json payment details>")
+        w_json.setCommandEvent(_pay_with_json)
+
+        return w_id, w_json
