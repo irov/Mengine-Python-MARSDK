@@ -7,11 +7,15 @@ def onInitialize():
 
     TaskManager.importTasks("MARSDK.Task", tasks)
 
-    aliases = ["AliasConfirmUserAgreement"]
+    aliases = [
+        "AliasConfirmUserAgreement"
+    ]
 
     TaskManager.importTasks("MARSDK.Alias", aliases)
 
-    policies = ["PolicyPurchaseMarSDK", "PolicyAuthMarSDK"]
+    policies = [
+        "PolicyAuthMarSDK"
+    ]
 
     TaskManager.importTasks("MARSDK.Policy", policies)
 
