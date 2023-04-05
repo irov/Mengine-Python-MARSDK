@@ -109,7 +109,7 @@ class SystemMARSDK(System):
 
             # todo: back onMarSDKInitSuccess
             Mengine.waitAndroidSemaphore("onMarSDKInitFail", SystemMARSDK._cbInitSuccess)
-            Mengine.waitAndroidSemaphore("onMarSDKInitFail", SystemMARSDK._cbInitFail)
+            # Mengine.waitAndroidSemaphore("onMarSDKInitFail", SystemMARSDK._cbInitFail)
 
             Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKLoginSuccess", SystemMARSDK._cbAndroidLoginSuccess)
             Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKLoginFail", SystemMARSDK._cbAndroidLoginFail)
