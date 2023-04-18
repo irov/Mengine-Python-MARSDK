@@ -247,7 +247,8 @@ class SystemMARSDK(System):
         _Log("[MarSDK] json payment data: {}".format(json_payment_data))
 
         if SystemMARSDK.getActiveSDKName() == ANDROID_SDK_NAME:
-            Mengine.androidBooleanMethod(ANDROID_SDK_NAME, "pay", json_payment_data)
+            if Mengine.androidBooleanMethod(ANDROID_SDK_NAME, "pay", json_payment_data) is False:
+                raise ValueError("sdk pay method returns false")
         elif SystemMARSDK.getActiveSDKName() == APPLE_SDK_NAME:
             Mengine.appleMARSDKSubmitPaymentData(json_payment_data)
         else:
