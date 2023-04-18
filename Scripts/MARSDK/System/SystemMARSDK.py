@@ -231,7 +231,9 @@ class SystemMARSDK(System):
             payment_data = dict(
                 productId=productID, price=price,
                 productName=productName, productDesc=productDesc,
-                buyNum=1, coinNum=balance
+                buyNum=1, coinNum=balance,
+                # REQUIRED DATA without documentation:
+                ratio=0, payNotifyUrl="", orderID="", extension="", channelOrderID="", state=0
             )
             json_payment_data = json.dumps(payment_data)
 
