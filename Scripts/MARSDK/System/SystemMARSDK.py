@@ -397,6 +397,15 @@ class SystemMARSDK(System):
     ###################################################
 
     @staticmethod
+    def getNetworkTimeMs():
+        if SystemMARSDK.getActiveSDKName() == ANDROID_SDK_NAME:
+            time = Mengine.androidLongMethod(ANDROID_SDK_NAME, "getNetworkTime")
+        else:
+            _Log("getNetworkTimeMs: No network time for current sdk !!!", err=True)
+            time = Mengine.getTimeMs()
+        return time
+
+    @staticmethod
     def _moveCoinIndicator():
         if MarUtils.isMartianIOS() is False:
             return
