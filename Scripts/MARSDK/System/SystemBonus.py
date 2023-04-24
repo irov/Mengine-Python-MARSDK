@@ -13,8 +13,7 @@ class SystemBonus(SystemBonusBase):
     def _onParams(self, params):
         super(SystemBonus, self)._onParams(params)
         self.logo_movie = None
-        self.__disableSomeMoviesOnMobileState__ = False
-        self.tc = None
+        self.__disableSomeMoviesOnMobileState__ = Mengine.hasTouchpad() is True
 
     def _onRun(self):
         super(SystemBonus, self)._onRun()
@@ -35,57 +34,50 @@ class SystemBonus(SystemBonusBase):
             return
         source.addNotify(Notificator.onBonusSceneTransition, scene_to)
 
-    def __cbSetTransitionStatus(self, scene_from=None, scene_to=None, zoom_name=None):
-        if scene_to is None or scene_to != 'Bonus':
-            if self.existTaskChain("BonusOpenGuidesPaid") is True:
-                self.removeTaskChain("BonusOpenGuidesPaid")
-                self.tc = None
+    def _runTaskChains(self):
+        if super(SystemBonus, self)._runTaskChains() is False:
             return False
 
-        # guides
         PolicyGuideOpen = PolicyManager.getPolicy("GuideOpen", "PolicyGuideOpenDefault")
-        self.tc = self.createTaskChain(Name="BonusOpenGuidesPaid", Repeat=True)
-        with self.tc as tc:
+        with self.createTaskChain(Name="BonusOpenGuidesPaid", Repeat=True) as tc:
             tc.addTask(PolicyGuideOpen, GroupName="Bonus", Movie2ButtonName="Movie2Button_Guide")
 
+    def _onBeginBonusTransition(self):
+        super(SystemBonus, self)._onBeginBonusTransition()
         self.__disableSomeMoviesOnMobile()
-
-        states = BonusManager.getStates()
-        for state in states.values():
-            demon = DemonManager.getDemon(state.demon_name)
-            if self.__disableSomeMoviesOnMobileState__ is True:
-                # special behavior
-                status = False
-                if state.state_id is "BonusVideo":
-                    self.current_state = state.state_id
-                    status = True
-                demon.setEnable(status)
-            else:
-                # default behavior
-                if state.status is True:
-                    self.current_state = state.state_id
-                demon.setEnable(state.status)
-
         return False
+
+    def _toggleDemonStates(self):
+        if self.__disableSomeMoviesOnMobileState__ is False:
+            return super(SystemBonus, self)._toggleDemonStates()
+
+        for state in BonusManager.getStates().values():
+            demon = DemonManager.getDemon(state.demon_name)
+
+            status = False
+            if state.state_id is "BonusVideo":
+                self.current_state = state.state_id
+                status = True
+
+            demon.setEnable(status)
 
     def __disableSomeMoviesOnMobile(self):
-        if Mengine.hasTouchpad() is True:
-            to_disable = ["Movie2Button_BonusPapers", "Movie2Button_BonusMusic", ]
+        if self.__disableSomeMoviesOnMobileState__ is False:
+            return
 
-            for title in to_disable:
-                if GroupManager.hasObject("Bonus", title):
-                    movie = GroupManager.getObject("Bonus", title)
-                    if movie.getParam("Enable") is True:
-                        movie.setEnable(False)
+        to_disable = ["Movie2Button_BonusPapers", "Movie2Button_BonusMusic", ]
 
-            self.__disableSomeMoviesOnMobileState__ = True
-            return True
-        return False
+        for title in to_disable:
+            if GroupManager.hasObject("Bonus", title):
+                movie = GroupManager.getObject("Bonus", title)
+                if movie.getParam("Enable") is True:
+                    movie.setEnable(False)
 
     def _cbTransitionEnd(self, scene_from, scene_to, group_name):
         if scene_to is None or scene_to != 'Bonus':
             return False
 
+        # we do it in transition End because we need to get logo entity
         self.__disableWrongLogo()
         return False
 
