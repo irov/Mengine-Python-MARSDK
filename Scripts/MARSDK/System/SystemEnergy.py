@@ -6,4 +6,6 @@ class SystemEnergy(SystemEnergyBase):
 
     @staticmethod
     def _getTimestamp():
-        return SystemMARSDK.getNetworkTimeMs()
+        if SystemMARSDK.hasActiveSDK():
+            return SystemMARSDK.getNetworkTimeMs()
+        return SystemEnergyBase._getTimestamp()
