@@ -76,6 +76,7 @@ class SystemMARSDK(System):
                 "onRealName": SystemMARSDK._cbAppleRealName,
                 "onPropComplete": SystemMARSDK._cbPropComplete,
                 "onPropError": SystemMARSDK._cbPropError,
+                "onPurchasedNonConsumable": SystemMARSDK._cbPurchasedNonConsumable,
                 # advertisement cbs
                 "onAdRewardedDidFailed": SystemMARSDK._cbAppleAdRewardedDidFailed,
                 "onAdRewardedDidLoaded": SystemMARSDK._cbAppleAdRewardedDidLoaded,
@@ -86,6 +87,7 @@ class SystemMARSDK(System):
                 "onAdRewardedDidFinished": SystemMARSDK._cbAppleAdRewardedDidFinished,
             }
             Mengine.appleMARSDKSetProvider(callbacks)
+            self.requestNonConsumablePurchased()
 
             SystemMARSDK._addDebugger("IOS")
             SystemMARSDK.current_sdk = APPLE_SDK_NAME
@@ -254,6 +256,33 @@ class SystemMARSDK(System):
         else:
             Trace.log("System", 0, "[MarSDK] pay error: no active sdk (prepared={}, inited={})".format(
                 SystemMARSDK.hasActiveSDK(), SystemMARSDK.isSDKInited()))
+
+    @staticmethod
+    def requestNonConsumablePurchased():
+        if SystemMARSDK.hasActiveSDK() is False:
+            _Log("requestNonConsumablePurchased No active sdk", err=True)
+            return False
+
+        non_consumable_products_ids = [
+            product.id for product in MonetizationManager.getProductsInfo()
+            if product.isConsumable() is False
+        ]
+
+        _Log("Request NonConsumable Purchased, ids = {}".format(non_consumable_products_ids))
+        if SystemMARSDK.getActiveSDKName() == APPLE_SDK_NAME:
+            Mengine.appleMARSDKRequestNonConsumablePurchased(non_consumable_products_ids)
+            return True
+
+        _Log("Current sdk ({}) hasn't this feature - request fail".format(SystemMARSDK.getActiveSDKName()), err=True)
+        return False
+
+    @staticmethod
+    def _cbPurchasedNonConsumable(purchased_ids):
+        _Log("[cb] Purchased NonConsumable: {}".format(purchased_ids))
+        for product_id in purchased_ids:
+            if SystemMonetization.isProductPurchased(product_id) is True:
+                continue
+            Notification.notify(Notificator.onPaySuccess, product_id)
 
     @staticmethod
     def _cbPropComplete(orderID):
