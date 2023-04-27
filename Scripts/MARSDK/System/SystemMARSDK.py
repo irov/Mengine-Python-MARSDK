@@ -263,14 +263,9 @@ class SystemMARSDK(System):
             _Log("requestNonConsumablePurchased No active sdk", err=True)
             return False
 
-        non_consumable_products_ids = [
-            product.id for product in MonetizationManager.getProductsInfo()
-            if product.isConsumable() is False
-        ]
-
-        _Log("Request NonConsumable Purchased, ids = {}".format(non_consumable_products_ids))
+        _Log("Request NonConsumable Purchased...")
         if SystemMARSDK.getActiveSDKName() == APPLE_SDK_NAME:
-            Mengine.appleMARSDKRequestNonConsumablePurchased(non_consumable_products_ids)
+            Mengine.appleMARSDKRequestNonConsumablePurchased()
             return True
 
         _Log("Current sdk ({}) hasn't this feature - request fail".format(SystemMARSDK.getActiveSDKName()), err=True)
