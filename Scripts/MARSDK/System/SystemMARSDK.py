@@ -496,8 +496,8 @@ class SystemMARSDK(System):
     @staticmethod
     def _cbAppleInit(*args):
         _Log("[AppleMARSDK cb] platform init: args={}".format(args))
-        SystemMARSDK.requestNonConsumablePurchased()
         SystemMARSDK._cbInitSuccess(args)
+        SystemMARSDK.requestNonConsumablePurchased()
 
     @staticmethod
     def _cbAppleRealName(*args):
