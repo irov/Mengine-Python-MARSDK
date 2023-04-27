@@ -397,12 +397,13 @@ class SystemMARSDK(System):
     ###################################################
 
     @staticmethod
-    def getNetworkTimeMs():
+    def getNetworkTime():
+        """ returns timestamp in seconds from China (baidu or zky) """
         if SystemMARSDK.getActiveSDKName() == ANDROID_SDK_NAME:
-            time = Mengine.androidLongMethod(ANDROID_SDK_NAME, "getNetworkTime")
+            time = Mengine.androidLongMethod(ANDROID_SDK_NAME, "getNetworkTime") / 1000
         else:
-            _Log("getNetworkTimeMs: No network time for current sdk !!!", err=True)
-            time = Mengine.getTimeMs()
+            _Log("getNetworkTime: No network time for current sdk !!!", err=True)
+            time = Mengine.getTime()
         return time
 
     @staticmethod

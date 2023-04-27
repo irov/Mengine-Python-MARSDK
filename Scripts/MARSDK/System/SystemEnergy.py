@@ -6,5 +6,5 @@ class SystemEnergy(SystemEnergyBase):
 
     def _getTimestamp(self):
         if SystemMARSDK.hasActiveSDK():
-            return SystemMARSDK.getNetworkTimeMs()
+            return SystemMARSDK.getNetworkTime()
         return super(SystemEnergy, self)._getTimestamp()
