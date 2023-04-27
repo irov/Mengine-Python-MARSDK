@@ -87,7 +87,6 @@ class SystemMARSDK(System):
                 "onAdRewardedDidFinished": SystemMARSDK._cbAppleAdRewardedDidFinished,
             }
             Mengine.appleMARSDKSetProvider(callbacks)
-            self.requestNonConsumablePurchased()
 
             SystemMARSDK._addDebugger("IOS")
             SystemMARSDK.current_sdk = APPLE_SDK_NAME
@@ -497,6 +496,7 @@ class SystemMARSDK(System):
     @staticmethod
     def _cbAppleInit(*args):
         _Log("[AppleMARSDK cb] platform init: args={}".format(args))
+        SystemMARSDK.requestNonConsumablePurchased()
         SystemMARSDK._cbInitSuccess(args)
 
     @staticmethod
