@@ -793,6 +793,13 @@ class SystemMARSDK(System):
     def __getIOSWidgets():
         widgets = []
 
+        # buttons
+
+        w_request_purchased = Mengine.createDevToDebugWidgetButton("request_purchased")
+        w_request_purchased.setTitle("Request NonConsumable Purchased")
+        w_request_purchased.setClickEvent(SystemMARSDK.requestNonConsumablePurchased)
+        widgets.append(w_request_purchased)
+
         # command lines
 
         w_prop_complete = Mengine.createDevToDebugWidgetCommandLine("prop_complete")
