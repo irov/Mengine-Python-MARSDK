@@ -422,7 +422,7 @@ class SystemMARSDK(System):
     @staticmethod
     def getNetworkTime():
         """ returns timestamp in seconds from China (baidu or zky) """
-        if SystemMARSDK.getActiveSDKName() == ANDROID_SDK_NAME:
+        if Mengine.isAvailablePlugin(ANDROID_SDK_NAME):
             time = Mengine.androidLongMethod(ANDROID_SDK_NAME, "getNetworkTime") / 1000
             _Log("getNetworkTime = {}".format(time))
         else:
