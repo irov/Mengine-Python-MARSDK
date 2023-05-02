@@ -829,6 +829,11 @@ class SystemMARSDK(System):
         w_clipboard.setClickEvent(SystemMARSDK.getFromClipboard)
         widgets.append(w_clipboard)
 
+        w_time = Mengine.createDevToDebugWidgetButton("net_time")
+        w_time.setTitle("Get Network Time")
+        w_time.setClickEvent(SystemMARSDK.getNetworkTime)
+        widgets.append(w_time)
+
         return widgets
 
     @staticmethod
