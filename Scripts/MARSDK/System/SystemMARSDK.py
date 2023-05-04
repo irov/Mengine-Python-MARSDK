@@ -276,7 +276,7 @@ class SystemMARSDK(System):
         for product_id in purchased_ids:
             if SystemMonetization.isProductPurchased(product_id) is True:
                 continue
-            Notification.notify(Notificator.onPaySuccess, product_id)
+            Notification.notify(Notificator.onDelayPurchased, product_id)
 
     @staticmethod
     def _cbPropComplete(orderID):
