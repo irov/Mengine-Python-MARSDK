@@ -34,9 +34,9 @@ class SystemBonus(SystemBonusBase):
             return
         source.addNotify(Notificator.onBonusSceneTransition, scene_to)
 
-    def _runTaskChains(self):
-        if super(SystemBonus, self)._runTaskChains() is False:
-            return False
+    def _runGuideOpenTC(self):
+        if self.existTaskChain("BonusOpenGuidesPaid") is True:
+            self.removeTaskChain("BonusOpenGuidesPaid")
 
         PolicyGuideOpen = PolicyManager.getPolicy("GuideOpen", "PolicyGuideOpenDefault")
         with self.createTaskChain(Name="BonusOpenGuidesPaid", Repeat=True) as tc:
@@ -44,6 +44,7 @@ class SystemBonus(SystemBonusBase):
 
     def _onBeginBonusTransition(self):
         super(SystemBonus, self)._onBeginBonusTransition()
+        self._runGuideOpenTC()
         self.__disableSomeMoviesOnMobile()
         return False
 
