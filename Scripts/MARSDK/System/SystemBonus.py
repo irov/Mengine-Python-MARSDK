@@ -66,13 +66,18 @@ class SystemBonus(SystemBonusBase):
         if self.__disableSomeMoviesOnMobileState__ is False:
             return
 
-        to_disable = ["Movie2Button_BonusPapers", "Movie2Button_BonusMusic", ]
+        to_disable = [
+            "Movie2Button_BonusPapers",
+            "Movie2Button_BonusMusic",
+            "Movie2Button_BonusVideo",
+        ]
 
         for title in to_disable:
-            if GroupManager.hasObject("Bonus", title):
-                movie = GroupManager.getObject("Bonus", title)
-                if movie.getParam("Enable") is True:
-                    movie.setEnable(False)
+            if GroupManager.hasObject("Bonus", title) is False:
+                continue
+            movie = GroupManager.getObject("Bonus", title)
+            if movie.getParam("Enable") is True:
+                movie.setEnable(False)
 
     def _cbTransitionEnd(self, scene_from, scene_to, group_name):
         if scene_to is None or scene_to != 'Bonus':
