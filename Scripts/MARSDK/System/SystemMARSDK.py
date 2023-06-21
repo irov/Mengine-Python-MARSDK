@@ -572,6 +572,7 @@ class SystemMARSDK(System):
         SystemMARSDK.login_status = False
         SystemMARSDK.login_details = None
         SystemMARSDK.__updateDebuggerLoginDetails()
+        SystemMARSDK.login()
 
     @staticmethod
     def isLogged():
