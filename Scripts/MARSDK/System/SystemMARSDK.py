@@ -21,6 +21,9 @@ _Log = SimpleLogger("SystemMARSDK")
 APPLE_SDK_NAME = "AppleMARSDK"
 ANDROID_SDK_NAME = "MarSDK"
 
+ADVERT_TYPE = "Rewarded"
+ADVERT_NAME = "Rewarded"
+
 
 class SystemMARSDK(System):
     sdk_init_event = Event("onMarSDKInitEvent")
@@ -369,11 +372,11 @@ class SystemMARSDK(System):
         """ callback after view advert, code is CODE_AD_VIDEO_CALLBACK """
         _Log("[showAd cb] result={} ({})".format(msg, watch_ad_time), force=True)
         if msg == "1":
-            Notification.notify(Notificator.onAdvertDisplayed, "Rewarded")
-            Notification.notify(Notificator.onAdvertRewarded, 'gold', None)
-            Notification.notify(Notificator.onAdvertHidden, "Rewarded")
+            Notification.notify(Notificator.onAdvertDisplayed, ADVERT_TYPE, ADVERT_NAME)
+            Notification.notify(Notificator.onAdvertRewarded, ADVERT_NAME, 'gold', None)
+            Notification.notify(Notificator.onAdvertHidden, ADVERT_TYPE, ADVERT_NAME)
         if msg == "0":
-            Notification.notify(Notificator.onAdvertDisplayFailed, "Rewarded")
+            Notification.notify(Notificator.onAdvertDisplayFailed, ADVERT_TYPE, ADVERT_NAME)
 
     @staticmethod
     def __getTodayDate():
@@ -385,34 +388,34 @@ class SystemMARSDK(System):
 
     @staticmethod
     def _cbAppleAdRewardedDidFailed():
-        Notification.notify(Notificator.onAdvertLoadFail, "Rewarded")
+        Notification.notify(Notificator.onAdvertLoadFail, ADVERT_TYPE, ADVERT_NAME)
         _Log("[AppleMarSDK cb] Failed - Rewarded video ad loading fail", err=True, force=True)
 
     @staticmethod
     def _cbAppleAdRewardedDidLoaded():
-        Notification.notify(Notificator.onAdvertLoadSuccess, "Rewarded")
+        Notification.notify(Notificator.onAdvertLoadSuccess, ADVERT_TYPE, ADVERT_NAME)
 
     @staticmethod
     def _cbAppleAdRewardedDidShow():
-        Notification.notify(Notificator.onAdvertDisplayed, "Rewarded")
+        Notification.notify(Notificator.onAdvertDisplayed, ADVERT_TYPE, ADVERT_NAME)
 
     @staticmethod
     def _cbAppleAdRewardedDidClicked():
-        Notification.notify(Notificator.onAdvertClicked, "Rewarded")
+        Notification.notify(Notificator.onAdvertClicked, ADVERT_TYPE, ADVERT_NAME)
 
     @staticmethod
     def _cbAppleAdRewardedDidClosed():
-        Notification.notify(Notificator.onAdvertHidden, "Rewarded")
+        Notification.notify(Notificator.onAdvertHidden, ADVERT_TYPE, ADVERT_NAME)
         _Log("[AppleMarSDK cb] close ad")
 
     @staticmethod
     def _cbAppleAdRewardedDidSkipped():
-        Notification.notify(Notificator.onAdvertHidden, "Rewarded")
+        Notification.notify(Notificator.onAdvertHidden, ADVERT_TYPE, ADVERT_NAME)
         _Log("[AppleMarSDK cb] skip ad")
 
     @staticmethod
     def _cbAppleAdRewardedDidFinished(reward_type, amount):
-        Notification.notify(Notificator.onAdvertRewarded, 'gold', None)
+        Notification.notify(Notificator.onAdvertRewarded, ADVERT_NAME, 'gold', None)
         _Log("[AppleMarSDK cb] the video play is done, props need to be sent to user: {!r} {!r}".format(reward_type, amount))
 
     ###################################################
