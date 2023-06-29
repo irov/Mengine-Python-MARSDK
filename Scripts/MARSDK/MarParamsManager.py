@@ -1,5 +1,6 @@
 from Foundation.DatabaseManager import DatabaseManager
 from Foundation.Manager import Manager
+from MARSDK.MarUtils import MarUtils
 
 
 class MarParamsManager(Manager):
@@ -36,6 +37,19 @@ class MarParamsManager(Manager):
         if data is None and default is not None:
             return default
 
+        return data
+
+    @staticmethod
+    def getDataOS(id, default=None):
+        if MarUtils.isMartianAndroid():
+            key = "Android"
+        elif MarUtils.isMartianIOS():
+            key = "IOS"
+        else:
+            Trace.log("Manager", 0, "MarParamsManager unknown OS or wrong settings")
+            return default
+
+        data = MarParamsManager.getData(id, key, default)
         return data
 
     @staticmethod
