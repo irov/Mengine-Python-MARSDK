@@ -435,8 +435,10 @@ class SystemMARSDK(System):
 
     @staticmethod
     def _moveCoinIndicator():
-        if MarUtils.isMartianIOS() is False:
+        new_local_position = MarParamsManager.getDataOS("coin_local_position", False)
+        if new_local_position is False:
             return
+        new_local_position = [float(pos) for pos in new_local_position.split(", ")]
 
         groups_names = ["Hint", "SkipPuzzle"]
         for group_name in groups_names:
@@ -445,7 +447,7 @@ class SystemMARSDK(System):
                 continue
             coin = group.getObject("Movie2_Coin")
 
-            coin.setPosition((-80.0, 10.0, 0.0))
+            coin.setPosition(new_local_position)
 
     def runUserAgreementBlocker(self):
         if self.existTaskChain("MartianUserAgreementBlocker") is True:
