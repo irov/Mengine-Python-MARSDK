@@ -34,7 +34,8 @@ def onInitialize():
         {"name": "SkipPuzzle", "override": True},
         {"name": "Credits", "override": True},
         {"name": "GiftExchange", "override": True},
-        {"name": "Toolbar", "override": True}
+        {"name": "Toolbar", "override": True},
+        {"name": "About", "override": True}
     ]
 
     EntityManager.importEntities("MARSDK.Entities", Types)
