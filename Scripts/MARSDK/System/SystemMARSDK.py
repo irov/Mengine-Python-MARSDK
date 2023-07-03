@@ -344,15 +344,15 @@ class SystemMARSDK(System):
     ###################################################
 
     @staticmethod
-    def isAdvertAvailable(**kwargs):
+    def isAdvertAvailable(*_, **__):
         return True
 
     @staticmethod
-    def canOfferAd(**kwargs):
+    def canOfferAd(*_, **__):
         return True
 
     @staticmethod
-    def showAd(**kwargs):
+    def showAd(*_, **__):
         if not MarUtils.isMartianTouchpadDevice():
             return False
 
