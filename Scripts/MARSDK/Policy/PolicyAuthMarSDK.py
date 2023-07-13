@@ -10,17 +10,17 @@ class PolicyAuthMarSDK(TaskAlias):
 
     def scopeWaitLogin(self, source):
         source.addEvent(SystemMARSDK.login_event, Filter=lambda status: status is True)
-        source.addPrint("<SystemMARSDK> auth done!")
+        source.addFunction(Trace.msg, "<SystemMARSDK> auth done!")
 
     def _scopeAuthProcessing(self, source):
         if SystemMARSDK.isSDKInited() is False:
-            source.addPrint("<SystemMARSDK> wait sdk init...")
+            source.addFunction(Trace.msg, "<SystemMARSDK> wait sdk init...")
             source.addEvent(SystemMARSDK.sdk_init_event, Filter=lambda status: status is True)
 
         with source.addIfTask(SystemMARSDK.isLogged) as (true, false):
-            true.addPrint("<SystemMARSDK> already logged in :)")
+            true.addFunction(Trace.msg, "<SystemMARSDK> already logged in")
 
-            false.addPrint("<SystemMARSDK> wait auth...")
+            false.addFunction(Trace.msg, "<SystemMARSDK> wait auth...")
             with false.addParallelTask(2) as (response, request):
                 response.addScope(self.scopeWaitLogin)
                 request.addScope(self.scopeCallLogin)
