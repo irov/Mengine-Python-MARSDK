@@ -22,7 +22,6 @@ APPLE_SDK_NAME = "AppleMARSDK"
 ANDROID_SDK_NAME = "MarSDK"
 
 ADVERT_TYPE = "Rewarded"
-ADVERT_NAME = "Rewarded"
 
 
 class SystemMARSDK(System):
@@ -36,6 +35,7 @@ class SystemMARSDK(System):
 
     clipboard = None
     _last_purchase_data = None
+    _last_advert = None     # (AdType, AdUnitName)
 
     def __init__(self):
         super(SystemMARSDK, self).__init__()
@@ -156,9 +156,9 @@ class SystemMARSDK(System):
         PaymentProvider.setProvider("MARSDK", dict(pay=SystemMARSDK.pay))
         PolicyManager.setPolicy("Authorize", "PolicyAuthMarSDK")
         AdvertisementProvider.setProvider("MARSDK", {
-            "ShowRewardedAdvert": SystemMARSDK.showAd,
-            "CanOfferRewardedAdvert": SystemMARSDK.canOfferAd,
-            "IsRewardedAdvertAvailable": SystemMARSDK.isAdvertAvailable,
+            "ShowRewardedAdvert": lambda ad_name: SystemMARSDK.showAd("Rewarded", ad_name),
+            "CanOfferRewardedAdvert": lambda ad_name: SystemMARSDK.canOfferAd("Rewarded", ad_name),
+            "IsRewardedAdvertAvailable": lambda ad_name: SystemMARSDK.isAdvertAvailable("Rewarded", ad_name),
         })
 
     def _onStop(self):
@@ -344,23 +344,29 @@ class SystemMARSDK(System):
     ###################################################
 
     @staticmethod
-    def isAdvertAvailable(*_, **__):
+    def isAdvertAvailable(AdType=ADVERT_TYPE, AdUnitName=None):
         return True
 
     @staticmethod
-    def canOfferAd(*_, **__):
+    def canOfferAd(AdType=ADVERT_TYPE, AdUnitName=None):
         return True
 
     @staticmethod
-    def showAd(*_, **__):
-        if not MarUtils.isMartianTouchpadDevice():
+    def showAd(AdType=ADVERT_TYPE, AdUnitName=None):
+        if AdType != ADVERT_TYPE:
+            Trace.log("System", 1, "MarSDK has only Rewarded ads, but given {!r}".format(AdType))
             return False
 
+        if MarUtils.isMartianTouchpadDevice() is False:
+            return False
+
+        SystemMARSDK._setLastAdvert(AdType, AdUnitName)
+
         if SystemMARSDK.isSDKInited() is False:
-            _Log("[MarSDK not inited] show ad, simulate that you watched it")
+            _Log("[MarSDK not inited] show ad {}:{}, simulate that you watched it".format(AdType, AdUnitName))
             SystemMARSDK._cbVideoAdCallback("1")
         else:
-            _Log("show ad", force=True)
+            _Log("show ad {}:{}".format(AdType, AdUnitName))
             if Mengine.isAvailablePlugin(ANDROID_SDK_NAME):
                 Mengine.androidBooleanMethod(ANDROID_SDK_NAME, "showAd")
             elif Mengine.isAvailablePlugin(APPLE_SDK_NAME):
@@ -370,13 +376,20 @@ class SystemMARSDK(System):
     @staticmethod
     def _cbVideoAdCallback(msg, watch_ad_time=None):
         """ callback after view advert, code is CODE_AD_VIDEO_CALLBACK """
-        _Log("[showAd cb] result={} ({})".format(msg, watch_ad_time), force=True)
+        if SystemMARSDK.hasLastAdvert() is False:
+            _Log("[showAd cb] ERROR: no last advert, but got ad view callback!! ({})".format(msg), err=True, force=True)
+            return
+
+        ad_type, ad_name = SystemMARSDK.getLastAdvert()
+        _Log("[showAd cb] [{}:{}] result={} ({}) ".format(ad_type, ad_name, msg, watch_ad_time), force=True)
+
         if msg == "1":
-            Notification.notify(Notificator.onAdvertDisplayed, ADVERT_TYPE, ADVERT_NAME)
-            Notification.notify(Notificator.onAdvertRewarded, ADVERT_NAME, 'gold', None)
-            Notification.notify(Notificator.onAdvertHidden, ADVERT_TYPE, ADVERT_NAME)
+            Notification.notify(Notificator.onAdvertDisplayed, ad_type, ad_name)
+            if ad_type == "Rewarded":
+                Notification.notify(Notificator.onAdvertRewarded, ad_name, 'gold', None)
+            Notification.notify(Notificator.onAdvertHidden, ad_type, ad_name)
         if msg == "0":
-            Notification.notify(Notificator.onAdvertDisplayFailed, ADVERT_TYPE, ADVERT_NAME)
+            Notification.notify(Notificator.onAdvertDisplayFailed, ad_type, ad_name)
 
     @staticmethod
     def __getTodayDate():
@@ -384,38 +397,58 @@ class SystemMARSDK(System):
         today_date = "{}/{}/{}".format(time.day, time.month, time.year)
         return today_date
 
+    @staticmethod
+    def _setLastAdvert(AdType, AdUnitName):
+        SystemMARSDK._last_advert = (AdType, AdUnitName)
+
+    @staticmethod
+    def getLastAdvert():
+        return SystemMARSDK._last_advert
+
+    @staticmethod
+    def hasLastAdvert():
+        return SystemMARSDK._last_advert is not None
+
     # apple sdk
 
     @staticmethod
     def _cbAppleAdRewardedDidFailed():
-        Notification.notify(Notificator.onAdvertLoadFail, ADVERT_TYPE, ADVERT_NAME)
+        Notification.notify(Notificator.onAdvertLoadFail, **SystemMARSDK.getLastAdvert())
         _Log("[AppleMarSDK cb] Failed - Rewarded video ad loading fail", err=True, force=True)
 
     @staticmethod
     def _cbAppleAdRewardedDidLoaded():
-        Notification.notify(Notificator.onAdvertLoadSuccess, ADVERT_TYPE, ADVERT_NAME)
+        for ad_name in MonetizationManager.getAdvertNames(ADVERT_TYPE):
+            Notification.notify(Notificator.onAdvertLoadSuccess, ADVERT_TYPE, ad_name)
 
     @staticmethod
     def _cbAppleAdRewardedDidShow():
-        Notification.notify(Notificator.onAdvertDisplayed, ADVERT_TYPE, ADVERT_NAME)
+        Notification.notify(Notificator.onAdvertDisplayed, **SystemMARSDK.getLastAdvert())
 
     @staticmethod
     def _cbAppleAdRewardedDidClicked():
-        Notification.notify(Notificator.onAdvertClicked, ADVERT_TYPE, ADVERT_NAME)
+        Notification.notify(Notificator.onAdvertClicked, **SystemMARSDK.getLastAdvert())
 
     @staticmethod
     def _cbAppleAdRewardedDidClosed():
-        Notification.notify(Notificator.onAdvertHidden, ADVERT_TYPE, ADVERT_NAME)
-        _Log("[AppleMarSDK cb] close ad")
+        ad_type, ad_name = SystemMARSDK.getLastAdvert()
+        Notification.notify(Notificator.onAdvertHidden, ad_type, ad_name)
+        _Log("[AppleMarSDK cb] ({}:{}) close ad".format(ad_type, ad_name))
 
     @staticmethod
     def _cbAppleAdRewardedDidSkipped():
-        Notification.notify(Notificator.onAdvertHidden, ADVERT_TYPE, ADVERT_NAME)
-        _Log("[AppleMarSDK cb] skip ad")
+        ad_type, ad_name = SystemMARSDK.getLastAdvert()
+        Notification.notify(Notificator.onAdvertHidden, ad_type, ad_name)
+        _Log("[AppleMarSDK cb] ({}:{}) skip ad".format(ad_type, ad_name))
 
     @staticmethod
     def _cbAppleAdRewardedDidFinished(reward_type, amount):
-        Notification.notify(Notificator.onAdvertRewarded, ADVERT_NAME, 'gold', None)
+        ad_type, ad_name = SystemMARSDK.getLastAdvert()
+        if ad_type != "Rewarded":
+            _Log("[AppleMarSDK cb] last ad is not rewarded video, but got rewarded finish cb"
+                 " ({}:{})".format(ad_type, ad_name), err=True, force=True)
+            return
+        Notification.notify(Notificator.onAdvertRewarded, ad_name, 'gold', None)
         _Log("[AppleMarSDK cb] the video play is done, props need to be sent to user: {!r} {!r}".format(reward_type, amount))
 
     ###################################################
@@ -775,10 +808,11 @@ class SystemMARSDK(System):
 
         # other
 
-        w_ad = Mengine.createDevToDebugWidgetButton("show_ad")
-        w_ad.setTitle("Show Ad")
-        w_ad.setClickEvent(SystemMARSDK.showAd)
-        widgets.append(w_ad)
+        for ad_name in MonetizationManager.getAdvertNames("Rewarded"):
+            w_ad = Mengine.createDevToDebugWidgetButton("show_ad_{}".format(ad_name))
+            w_ad.setTitle("Show Ad {!r}".format(ad_name))
+            w_ad.setClickEvent(SystemMARSDK.showAd, "Rewarded", ad_name)
+            widgets.append(w_ad)
 
         w_payments = SystemMARSDK._createDebuggerPayWidgets()
         widgets.extend(w_payments)
