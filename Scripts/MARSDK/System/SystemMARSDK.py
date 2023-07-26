@@ -1,19 +1,16 @@
-from Event import Event
+from Foundation.System import System
 from Foundation.DefaultManager import DefaultManager
 from Foundation.GroupManager import GroupManager
 from Foundation.PolicyManager import PolicyManager
 from Foundation.Providers.AdvertisementProvider import AdvertisementProvider
 from Foundation.Providers.PaymentProvider import PaymentProvider
 from Foundation.SceneManager import SceneManager
-from Foundation.System import System
 from Foundation.Systems.SystemAppleServices import SystemAppleServices
 from Foundation.Utils import SimpleLogger
-from Foundation.Utils import getCurrentBusinessModel
-from HOPA.System.SystemMonetization import SystemMonetization
 from Foundation.MonetizationManager import MonetizationManager
+from HOPA.System.SystemMonetization import SystemMonetization
 from MARSDK.MarParamsManager import MarParamsManager
 from MARSDK.MarUtils import MarUtils
-from Notification import Notification
 import json
 
 
@@ -42,20 +39,34 @@ class SystemMARSDK(System):
         self.isConfirmedUserAgreement = False
 
     def _onInitialize(self):
+        if Mengine.isAvailablePlugin(APPLE_SDK_NAME) is True or Mengine.isAvailablePlugin(ANDROID_SDK_NAME) is True:
+            if MarUtils.isMartianTouchpadDevice() is False:
+                Trace.log("System", 0,
+                          "Found important ERROR: available marsdk plugin, but config is wrong!!!!\n"
+                          "Please check, next params:\n"
+                          "- must be touchpad device (or use -touchpad)\n"
+                          "- game locale must be 'zh' (check Configs.json 'Locale' section or use -locale:zh)\n"
+                          "- publisher must be 'Martian' (check Configs.json 'Params' section, param 'Publisher')")
+                return
+
         if MarUtils.isMartianTouchpadDevice():
             self._setupPolicies()
             self.addObserver(Notificator.onSelectAccount, SystemMARSDK._onSelectAccount)
 
+        # INITIALIZE MARSDK HERE:
         if MarUtils.isMartianAndroid() and Mengine.isAvailablePlugin(ANDROID_SDK_NAME):
             self.__tryAndroidMarSDK()
-
         elif MarUtils.isMartianIOS():
             SystemAppleServices.setGameCenterConnectProvider()
 
+            # for Premium version we don't use marsdk plugin, so initialize GameCenter before this check:
             if Mengine.isAvailablePlugin(APPLE_SDK_NAME) is False:
                 return
 
             self.__tryIOSMarSDK()
+        else:
+            if Utils.getCurrentPublisher() == "Martian":
+                _Log("no MARSDK initialize call: please check game settings or marsdk plugin", err=True, force=True)
 
     def _onRun(self):
         if Mengine.getConfigBool("Martian", "RequireAcceptUserAgreements", False) is True:
@@ -721,7 +732,7 @@ class SystemMARSDK(System):
     def _onLoadSave(self):
         if MarUtils.isMartianTouchpadDevice() is False:
             return
-        if getCurrentBusinessModel() == "Free":
+        if Utils.getCurrentBusinessModel() == "Free":
             self._moveCoinIndicator()
 
     @staticmethod
