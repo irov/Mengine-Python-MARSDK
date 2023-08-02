@@ -471,9 +471,12 @@ class SystemMARSDK(System):
         """ returns timestamp in seconds from China (baidu or zky) """
         if Mengine.isAvailablePlugin(ANDROID_SDK_NAME):
             time = Mengine.androidLongMethod(ANDROID_SDK_NAME, "getNetworkTime") / 1000
+        elif Mengine.isAvailablePlugin(APPLE_SDK_NAME):
+            # Get the server timestamp (Baidu time, return 0 if there is no network,
+            # return millisecond timestamp if there is network || 1684310674000)
+            time = Mengine.appleMARSDKGetInternetDate() / 1000
             _Log("getNetworkTime = {}".format(time))
         else:
-            _Log("getNetworkTime: No network time for current sdk !!!", err=True)
             time = Mengine.getTime()
         return time
 
