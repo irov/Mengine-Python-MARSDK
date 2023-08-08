@@ -5,6 +5,6 @@ from MARSDK.MarUtils import MarUtils
 
 class SystemEnergy(SystemEnergyBase):
 
-    if MarUtils.isMartianAndroid() is True:
+    if MarUtils.isMartianTouchpadDevice() is True:
         def _getTimestamp(self):
             return SystemMARSDK.getNetworkTime()
