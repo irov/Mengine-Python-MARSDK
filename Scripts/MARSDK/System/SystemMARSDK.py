@@ -164,8 +164,11 @@ class SystemMARSDK(System):
     @classmethod
     def _setupPolicies(cls):
         DefaultManager.addDefault("UseDefaultGDPRProvider", False)
-        PaymentProvider.setProvider("MARSDK", dict(pay=SystemMARSDK.pay))
+        DefaultManager.addDefault("EnergyIndicatorWhitelist", "Store,InGameMenu")
+
         PolicyManager.setPolicy("Authorize", "PolicyAuthMarSDK")
+
+        PaymentProvider.setProvider("MARSDK", dict(pay=SystemMARSDK.pay))
         AdvertisementProvider.setProvider("MARSDK", {
             "ShowRewardedAdvert": lambda ad_name: SystemMARSDK.showAd("Rewarded", ad_name),
             "CanOfferRewardedAdvert": lambda ad_name: SystemMARSDK.canOfferAd("Rewarded", ad_name),
