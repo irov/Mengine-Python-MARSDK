@@ -173,6 +173,7 @@ class SystemMARSDK(System):
             "ShowRewardedAdvert": lambda ad_name: SystemMARSDK.showAd("Rewarded", ad_name),
             "CanOfferRewardedAdvert": lambda ad_name: SystemMARSDK.canOfferAd("Rewarded", ad_name),
             "IsRewardedAdvertAvailable": lambda ad_name: SystemMARSDK.isAdvertAvailable("Rewarded", ad_name),
+            "IsInterstitialAdvertAvailable": lambda ad_name: False,
         })
 
     def _onStop(self):
