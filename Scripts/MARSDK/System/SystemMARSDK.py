@@ -589,7 +589,7 @@ class SystemMARSDK(System):
 
         if Mengine.isAvailablePlugin("GDPR") is True:
             if Mengine.androidBooleanMethod("GDPR", "isGDPRPass") is False:
-                Mengine.androidMethod("GDPR", "setGDPRPass")
+                Mengine.androidMethod("GDPR", "setGDPRPass", True)
 
         SystemMARSDK._cbLoginSuccess(gameType, isFreeFlag)
 
