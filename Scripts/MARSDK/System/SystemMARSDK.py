@@ -587,6 +587,10 @@ class SystemMARSDK(System):
             # acquire ads control information
             Mengine.androidMethod(ANDROID_SDK_NAME, "reqAdControlInfo")
 
+        if Mengine.isAvailablePlugin("GDPR") is True:
+            if Mengine.androidBooleanMethod("GDPR", "isGDPRPass") is False:
+                Mengine.androidMethod("GDPR", "setGDPRPass")
+
         SystemMARSDK._cbLoginSuccess(gameType, isFreeFlag)
 
     @staticmethod
