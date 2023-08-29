@@ -575,6 +575,9 @@ class SystemMARSDK(System):
             SystemMARSDK._cbLoginFail()
             return
 
+        if Mengine.isAvailablePlugin("AppleGeneralDataProtectionRegulation") is True:
+            Mengine.appleSetGDPRPass(True)
+
         SystemMARSDK.login_details = login_details
         SystemMARSDK._cbLoginSuccess()
 
@@ -587,10 +590,8 @@ class SystemMARSDK(System):
             # acquire ads control information
             Mengine.androidMethod(ANDROID_SDK_NAME, "reqAdControlInfo")
 
-            if _ANDROID and Mengine.isAvailablePlugin("GDPR") is True:
+            if Mengine.isAvailablePlugin("GDPR") is True:
                 Mengine.androidMethod("GDPR", "setGDPRPass", True)
-            if _IOS and Mengine.isAvailablePlugin("AppleGeneralDataProtectionRegulation") is True:
-                Mengine.appleSetGDPRPass(True)
 
         SystemMARSDK._cbLoginSuccess(gameType, isFreeFlag)
 
