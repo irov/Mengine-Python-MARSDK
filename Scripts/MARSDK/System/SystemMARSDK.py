@@ -504,8 +504,8 @@ class SystemMARSDK(System):
         if self.existTaskChain("MartianUserAgreementBlocker") is True:
             return
 
-        # todo: remove import (may cause ImportError for some projects)
-        from GOAP4.System.SystemGlobal1 import MENU_LOAD_DONE_EVENT
+        from Foundation.SystemManager import SystemManager
+        SystemGlobal1 = SystemManager.getSystem("SystemGlobal1")
 
         def _confirm():
             self.isConfirmedUserAgreement = True
@@ -519,7 +519,7 @@ class SystemMARSDK(System):
                 demon_profile = GroupManager.getObject("Profile", "Demon_Profile")
                 account_id = demon_profile.getParam("Current")
                 if account_id is None:
-                    source.addEvent(MENU_LOAD_DONE_EVENT)
+                    source.addEvent(SystemGlobal1.MENU_LOAD_DONE_EVENT)
 
             if SceneManager.getCurrentSceneName() != "Menu":
                 tc.addListener(Notificator.onSceneInit, Filter=lambda scene_name: scene_name == "Menu")
