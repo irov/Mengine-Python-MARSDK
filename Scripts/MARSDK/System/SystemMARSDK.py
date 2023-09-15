@@ -4,6 +4,7 @@ from Foundation.GroupManager import GroupManager
 from Foundation.PolicyManager import PolicyManager
 from Foundation.Providers.AdvertisementProvider import AdvertisementProvider
 from Foundation.Providers.PaymentProvider import PaymentProvider
+from Foundation.Providers.AuthProvider import AuthProvider
 from Foundation.SceneManager import SceneManager
 from Foundation.Systems.SystemAppleServices import SystemAppleServices
 from Foundation.Utils import SimpleLogger
@@ -166,7 +167,13 @@ class SystemMARSDK(System):
         DefaultManager.addDefault("UseDefaultGDPRProvider", False)
         DefaultManager.addDefault("EnergyIndicatorWhitelist", "Store,InGameMenu")
 
-        PolicyManager.setPolicy("Authorize", "PolicyAuthMarSDK")
+        PolicyManager.setPolicy("Authorize", "PolicyAuthMarSDK")   # deprecated
+        AuthProvider.setProvider("MARSDK", {
+            "login": SystemMARSDK.login,
+            "logout": SystemMARSDK.logout,
+            "isLoggedIn": SystemMARSDK.isLogged,
+            "switchAccount": SystemMARSDK.switchAccount
+        })
 
         PaymentProvider.setProvider("MARSDK", dict(pay=SystemMARSDK.pay))
         AdvertisementProvider.setProvider("MARSDK", {
@@ -609,6 +616,7 @@ class SystemMARSDK(System):
 
         SystemMARSDK.login_event(True)
         SystemMARSDK.login_status = True
+        Notification.notify(Notificator.onUserLoggedIn)
         SystemMARSDK.__updateDebuggerLoginDetails()
 
     @staticmethod
@@ -634,6 +642,7 @@ class SystemMARSDK(System):
         SystemMARSDK.login_status = False
         SystemMARSDK.login_details = None
         SystemMARSDK.__updateDebuggerLoginDetails()
+        Notification.notify(Notificator.onUserLoggedOut)
         SystemMARSDK.login()
 
     @staticmethod
@@ -716,7 +725,8 @@ class SystemMARSDK(System):
         if Mengine.isAvailablePlugin(APPLE_SDK_NAME) is False:
             if MarUtils.getDebugOption() == "ios":
                 _Log("[AppleMARSDK not active] simulate switch account")
-                SystemMARSDK._cbLogout()
+                SystemMARSDK.logout()
+                SystemMARSDK.login()
                 return True
 
             _Log("[AppleMARSDK] switch account aborted - plugin not active", err=True, force=True)
