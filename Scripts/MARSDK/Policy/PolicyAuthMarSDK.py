@@ -30,6 +30,7 @@ class PolicyAuthMarSDK(TaskAlias):
             source.addScope(self._scopeAuthProcessing)
         elif MarUtils.isMartianTouchpadDevice() and _DEVELOPMENT is True:
             source.addPrint("<SystemMARSDK> [MarSDK not inited] dummy auth moment...")
+            source.addNotify(Notificator.onUserLoggedIn)
         else:
             Trace.msg_err("<SystemMARSDK> auth error: no active sdk !!!")
             source.addDummy()
