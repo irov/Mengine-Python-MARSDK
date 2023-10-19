@@ -19,11 +19,19 @@ class SystemMonetization(SystemMonetizationBase):
             if reward_type is None:
                 return False
 
+            def _callPaySuccess(prod_id):
+                Notification.notify(Notificator.onPaySuccess, prod_id)
+
             rewards = {
                 "golds": [SystemMonetization.addGold, reward_amount],
                 "energy": [SystemMonetization.addEnergy, reward_amount],
-                "MysteryChapter": [SystemMonetization.unlockChapter, "Bonus"]
+                "MysteryChapter": [SystemMonetization.unlockChapter, "Bonus"],
             }
+
+            guide_product_id = MonetizationManager.getGeneralSetting("GuidesProductID")
+            if MonetizationManager.hasProductInfo(guide_product_id):
+                guide_product = MonetizationManager.getProductInfo(guide_product_id)
+                rewards["guide"] = [_callPaySuccess, guide_product.id]
 
             if reward_type not in rewards:
                 Trace.log("System", 0, "SystemMonetization (MarSDK) reward_type {!r} is unknown".format(reward_type))
