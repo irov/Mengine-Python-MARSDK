@@ -213,20 +213,20 @@ class SystemMARSDK(System):
     @staticmethod
     def _cbRedeemResultSuccess(propNumber, propType, msg):
         _Log("onRedeemResult: propNumber={}, propType={}, msg={}".format(propNumber, propType, msg))
-        if propType in ["golds", "energy"] and propNumber > 0:  # add gold
-            Notification.notify(Notificator.onGiftExchangeRedeemResult, propType, propNumber)
+        if propType in ["golds", "energy", "guide"] and propNumber > 0:
             _Log("onRedeemResult - SUCCESS: {}, {}, {}".format(propNumber, propType, msg))
+            Notification.notify(Notificator.onGiftExchangeRedeemResult, propType, propNumber)
         elif propType == "unlock":
-            Notification.notify(Notificator.onGiftExchangeRedeemResult, "MysteryChapter", None)
             _Log("onRedeemResult - SUCCESS: {}, {}".format(propType, msg))
+            Notification.notify(Notificator.onGiftExchangeRedeemResult, "MysteryChapter", None)
         else:
+            _Log("onRedeemResult - FAIL: {}, {}, {}".format(propNumber, propType, msg), force=True, err=True)
             Notification.notify(Notificator.onGiftExchangeRedeemResult, None, None)
-            _Log("onRedeemResult - FAIL: {}, {}, {}".format(propNumber, propType, msg), err=True)
 
     @staticmethod
     def _cbRedeemResultError(msg, exception_text):
-        Notification.notify(Notificator.onGiftExchangeRedeemResult, None, None)
         _Log("onRedeemResult - ERROR ({}): {}".format(msg, exception_text), err=True, force=True)
+        Notification.notify(Notificator.onGiftExchangeRedeemResult, None, None)
 
     ###################################################
     # Methods for working with Payment
