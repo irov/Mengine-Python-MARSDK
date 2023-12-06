@@ -6,7 +6,6 @@ from Foundation.Providers.AdvertisementProvider import AdvertisementProvider
 from Foundation.Providers.PaymentProvider import PaymentProvider
 from Foundation.Providers.AuthProvider import AuthProvider
 from Foundation.SceneManager import SceneManager
-from Foundation.Systems.SystemAppleServices import SystemAppleServices
 from Foundation.Utils import SimpleLogger
 from Foundation.MonetizationManager import MonetizationManager
 from HOPA.System.SystemMonetization import SystemMonetization
@@ -58,9 +57,7 @@ class SystemMARSDK(System):
         if MarUtils.isMartianAndroid() and Mengine.isAvailablePlugin(ANDROID_SDK_NAME):
             self.__tryAndroidMarSDK()
         elif MarUtils.isMartianIOS():
-            SystemAppleServices.setGameCenterConnectProvider()
-
-            # for Premium version we don't use marsdk plugin, so initialize GameCenter before this check:
+            # for Premium version we don't use marsdk plugin:
             if Mengine.isAvailablePlugin(APPLE_SDK_NAME) is False:
                 return
 
@@ -184,8 +181,7 @@ class SystemMARSDK(System):
         })
 
     def _onStop(self):
-        if MarUtils.isMartianIOS():
-            SystemAppleServices.removeGameCenterConnectProvider()
+        pass
 
     def _onFinalize(self):
         SystemMARSDK._remDebugger()
