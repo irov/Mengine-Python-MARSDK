@@ -431,7 +431,7 @@ class SystemMARSDK(System):
 
     @staticmethod
     def _cbAppleAdRewardedDidFailed():
-        Notification.notify(Notificator.onAdvertLoadFail, **SystemMARSDK.getLastAdvert())
+        Notification.notify(Notificator.onAdvertLoadFail, *SystemMARSDK.getLastAdvert())
         _Log("[AppleMarSDK cb] Failed - Rewarded video ad loading fail", err=True, force=True)
 
     @staticmethod
@@ -441,11 +441,11 @@ class SystemMARSDK(System):
 
     @staticmethod
     def _cbAppleAdRewardedDidShow():
-        Notification.notify(Notificator.onAdvertDisplayed, **SystemMARSDK.getLastAdvert())
+        Notification.notify(Notificator.onAdvertDisplayed, *SystemMARSDK.getLastAdvert())
 
     @staticmethod
     def _cbAppleAdRewardedDidClicked():
-        Notification.notify(Notificator.onAdvertClicked, **SystemMARSDK.getLastAdvert())
+        Notification.notify(Notificator.onAdvertClicked, *SystemMARSDK.getLastAdvert())
 
     @staticmethod
     def _cbAppleAdRewardedDidClosed():
