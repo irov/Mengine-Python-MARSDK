@@ -456,6 +456,7 @@ class SystemMARSDK(System):
     @staticmethod
     def _cbAppleAdRewardedDidSkipped():
         ad_type, ad_name = SystemMARSDK.getLastAdvert()
+        Notification.notify(Notificator.onAdvertSkipped, ad_type, ad_name)
         Notification.notify(Notificator.onAdvertHidden, ad_type, ad_name)
         _Log("[AppleMarSDK cb] ({}:{}) skip ad".format(ad_type, ad_name))
 
