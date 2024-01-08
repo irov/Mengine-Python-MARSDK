@@ -120,8 +120,8 @@ class SystemMARSDK(System):
         try:
             self.addObserver(Notificator.onGameStoreSentRewards, SystemMARSDK._cbGotRewards)
 
-            Mengine.waitAndroidSemaphore("onMarSDKInitSuccess", SystemMARSDK._cbInitSuccess)
-            Mengine.waitAndroidSemaphore("onMarSDKInitFail", SystemMARSDK._cbInitFail)
+            Mengine.waitSemaphore("onMarSDKInitSuccess", SystemMARSDK._cbInitSuccess)
+            Mengine.waitSemaphore("onMarSDKInitFail", SystemMARSDK._cbInitFail)
 
             Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKLoginSuccess", SystemMARSDK._cbAndroidLoginSuccess)
             Mengine.setAndroidCallback(ANDROID_SDK_NAME, "onMarSDKLoginFail", SystemMARSDK._cbAndroidLoginFail)
