@@ -8,6 +8,7 @@ from Foundation.Providers.AuthProvider import AuthProvider
 from Foundation.SceneManager import SceneManager
 from Foundation.Utils import SimpleLogger
 from Foundation.MonetizationManager import MonetizationManager
+from Foundation.Systems.SystemGDPR import ANDROID_PLUGIN_NAME as GDPR_ANDROID_PLUGIN_NAME
 from HOPA.System.SystemMonetization import SystemMonetization
 from MARSDK.MarParamsManager import MarParamsManager
 from MARSDK.MarUtils import MarUtils
@@ -16,7 +17,7 @@ import json
 
 _Log = SimpleLogger("SystemMARSDK")
 APPLE_SDK_NAME = "AppleMARSDK"
-ANDROID_SDK_NAME = "MarSDK"
+ANDROID_SDK_NAME = "MengineMAR"
 
 ADVERT_TYPE = "Rewarded"
 
@@ -594,8 +595,8 @@ class SystemMARSDK(System):
             # acquire ads control information
             Mengine.androidMethod(ANDROID_SDK_NAME, "reqAdControlInfo")
 
-            if Mengine.isAvailablePlugin("GDPR") is True:
-                Mengine.androidMethod("GDPR", "setGDPRPass", True)
+            if Mengine.isAvailablePlugin(GDPR_ANDROID_PLUGIN_NAME) is True:
+                Mengine.androidMethod(GDPR_ANDROID_PLUGIN_NAME, "setGDPRPass", True)
 
         SystemMARSDK._cbLoginSuccess(gameType, isFreeFlag)
 
