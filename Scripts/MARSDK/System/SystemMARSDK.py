@@ -8,7 +8,7 @@ from Foundation.Providers.AuthProvider import AuthProvider
 from Foundation.SceneManager import SceneManager
 from Foundation.Utils import SimpleLogger
 from Foundation.MonetizationManager import MonetizationManager
-from Foundation.Systems.SystemGDPR import ANDROID_PLUGIN_NAME as GDPR_ANDROID_PLUGIN_NAME
+from Foundation.Systems.SystemApplovin import ANDROID_PLUGIN_NAME as GDPR_ANDROID_PLUGIN_NAME
 from HOPA.System.SystemMonetization import SystemMonetization
 from MARSDK.MarParamsManager import MarParamsManager
 from MARSDK.MarUtils import MarUtils
