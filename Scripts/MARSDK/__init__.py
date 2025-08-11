@@ -49,4 +49,5 @@ def onInitialize():
 
 
 def onFinalize():
+    Trace.msg("MARSDK.onFinalize")
     pass
